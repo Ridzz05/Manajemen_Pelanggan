@@ -128,10 +128,7 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        iconTheme: IconThemeData(
-          color: textPrimary,
-          size: 24,
-        ),
+        iconTheme: IconThemeData(color: textPrimary, size: 24),
       ),
 
       // Bottom Navigation Bar Theme
@@ -156,9 +153,7 @@ class AppTheme {
         color: surfaceColor,
         elevation: 0, // Mengurangi elevation card
         shadowColor: Colors.transparent, // Menghilangkan shadow
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
 
@@ -184,7 +179,10 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: backgroundColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,

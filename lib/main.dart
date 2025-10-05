@@ -6,6 +6,7 @@ import 'package:proyek_mahasiswa/screens/main_screen.dart';
 import 'package:proyek_mahasiswa/providers/statistics_provider.dart';
 import 'package:proyek_mahasiswa/providers/customer_provider.dart';
 import 'package:proyek_mahasiswa/providers/service_provider.dart';
+import 'package:proyek_mahasiswa/providers/profile_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,6 +22,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => StatisticsProvider()),
         ChangeNotifierProvider(create: (context) => CustomerProvider()),
         ChangeNotifierProvider(create: (context) => ServiceProvider()),
+        ChangeNotifierProvider(create: (context) => ProfileProvider()),
       ],
       child: MaterialApp(
         title: 'Manajemen Pelanggan AWB',

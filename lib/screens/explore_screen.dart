@@ -127,19 +127,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _showAddCustomerDialog(context);
-        },
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.person_add_rounded),
-        label: const Text('Tambah Pelanggan'),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
     );
   }
 
@@ -162,7 +149,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Tambahkan pelanggan pertama Anda',
+            'Gunakan tombol + untuk menambah pelanggan',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(context).colorScheme.outline,
             ),
@@ -267,113 +254,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
           );
         },
       ),
-    );
-  }
-
-  void _showAddCustomerDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final emailController = TextEditingController();
-    final phoneController = TextEditingController();
-    final addressController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Tambah Pelanggan'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap',
-                    hintText: 'Masukkan nama pelanggan',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Masukkan email pelanggan',
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'No. Telepon',
-                    hintText: 'Masukkan nomor telepon',
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Alamat',
-                    hintText: 'Masukkan alamat lengkap',
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.isEmpty || emailController.text.isEmpty ||
-                    phoneController.text.isEmpty || addressController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Semua field harus diisi'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-
-                final customer = Customer(
-                  name: nameController.text,
-                  email: emailController.text,
-                  phone: phoneController.text,
-                  address: addressController.text,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                );
-
-                final success = await context.read<CustomerProvider>().addCustomer(customer);
-
-                Navigator.of(context).pop();
-
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pelanggan berhasil ditambahkan'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Gagal menambahkan pelanggan'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
     );
   }
 

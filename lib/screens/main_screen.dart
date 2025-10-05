@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/profile_provider.dart';
+import '../utils/image_storage.dart';
+import 'dart:io';
 import 'package:proyek_mahasiswa/screens/home_screen.dart';
 import 'package:proyek_mahasiswa/screens/explore_screen.dart';
 import 'package:proyek_mahasiswa/screens/agenda_screen.dart';
 import 'package:proyek_mahasiswa/screens/profile_screen.dart';
+import 'package:proyek_mahasiswa/screens/add_customer_screen.dart';
+import 'package:proyek_mahasiswa/screens/add_service_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,43 +30,67 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(16), // Full rounded
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.shadow.withOpacity(0.1), // Mengurangi opacity shadow
-                    blurRadius: 4, // Mengurangi blur radius
-                    offset: const Offset(0, 1), // Mengurangi offset
+        title: Consumer<ProfileProvider>(
+          builder: (context, profileProvider, child) {
+            final profile = profileProvider.profile;
+            final hasPhoto = profile?.businessLogo.isNotEmpty ?? false;
+
+            return Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Icon(
-                Icons.article_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Manajemen Pelanggan AWB',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.black, // Warna hitam untuk teks
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+                  child: FutureBuilder<bool>(
+                    future: hasPhoto ? ImageStorage.profileImageExists(profile!.businessLogo) : Future.value(false),
+                    builder: (context, snapshot) {
+                      if (snapshot.data == true) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            File(profile!.businessLogo),
+                            fit: BoxFit.cover,
+                            width: 32,
+                            height: 32,
+                          ),
+                        );
+                      } else {
+                        return Icon(
+                          Icons.article_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'AWBuilder',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
-        centerTitle: false, // Mengubah ke kiri
-        surfaceTintColor: Colors.transparent, // Menghapus efek tint putih
+        centerTitle: false,
+        surfaceTintColor: Colors.transparent,
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
@@ -69,39 +99,71 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            height: 68, // Further reduced height for mobile
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6), // Minimal padding
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildNavItem(
-                  icon: Icons.home_rounded,
-                  label: 'Dashboard',
-                  isSelected: _selectedIndex == 0,
-                  onTap: () => _onBottomNavTapped(0),
+                // Dashboard
+                Expanded(
+                  flex: 1,
+                  child: _buildNavItem(
+                    icon: Icons.home_rounded,
+                    label: 'Dashboard',
+                    isSelected: _selectedIndex == 0,
+                    onTap: () => _onBottomNavTapped(0),
+                  ),
                 ),
-                _buildNavItem(
-                  icon: Icons.search_rounded,
-                  label: 'Daftar Pelanggan',
-                  isSelected: _selectedIndex == 1,
-                  onTap: () => _onBottomNavTapped(1),
+
+                // Pelanggan
+                Expanded(
+                  flex: 1,
+                  child: _buildNavItem(
+                    icon: Icons.search_rounded,
+                    label: 'Pelanggan',
+                    isSelected: _selectedIndex == 1,
+                    onTap: () => _onBottomNavTapped(1),
+                  ),
                 ),
-                _buildPlusButton(),
-                _buildNavItem(
-                  icon: Icons.event_note_rounded,
-                  label: 'Daftar Layanan',
-                  isSelected: _selectedIndex == 3,
-                  onTap: () => _onBottomNavTapped(3),
+
+                // Plus Button - Perfectly Centered
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  child: _buildPlusButton(),
                 ),
-                _buildNavItem(
-                  icon: Icons.person_rounded,
-                  label: 'Profil',
-                  isSelected: _selectedIndex == 4,
-                  onTap: () => _onBottomNavTapped(4),
+
+                // Layanan
+                Expanded(
+                  flex: 1,
+                  child: _buildNavItem(
+                    icon: Icons.event_note_rounded,
+                    label: 'Layanan',
+                    isSelected: _selectedIndex == 3,
+                    onTap: () => _onBottomNavTapped(3),
+                  ),
+                ),
+
+                // Profil
+                Expanded(
+                  flex: 1,
+                  child: _buildNavItem(
+                    icon: Icons.person_rounded,
+                    label: 'Profil',
+                    isSelected: _selectedIndex == 4,
+                    onTap: () => _onBottomNavTapped(4),
+                  ),
                 ),
               ],
             ),
@@ -111,31 +173,80 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4), // Even smaller padding
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(14), // Smaller radius
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              size: isSelected ? 20 : 18, // Smaller icons for mobile
+            ),
+            const SizedBox(height: 1), // Minimal spacing
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 10, // Smaller text for mobile
+                height: 1.1, // Tighter line height
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlusButton() {
     return GestureDetector(
       onTap: () {
-        // Fungsi untuk menambahkan Layanan dan Pelanggan
         _showAddOptions();
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: 48,
-        height: 48,
+        width: 38, // Smallest optimal size for mobile
+        height: 38, // Smallest optimal size for mobile
+        margin: const EdgeInsets.symmetric(horizontal: 2), // Minimal margin
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary,
-          borderRadius: BorderRadius.circular(24), // Full rounded
+          borderRadius: BorderRadius.circular(17), // Proportional radius
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withOpacity(0.15),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: Theme.of(context).colorScheme.shadow.withOpacity(0.25),
+              blurRadius: 3, // Minimal blur for mobile
+              offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Icon(
           Icons.add_rounded,
           color: Colors.white,
-          size: 28,
+          size: 18, // Proportional icon size
         ),
       ),
     );
@@ -184,11 +295,24 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // Navigasi ke form tambah pelanggan
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Navigasi ke form tambah pelanggan'),
-                      duration: Duration(seconds: 2),
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const AddCustomerScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOut;
+
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
+
+                        return SlideTransition(
+                          position: animation.drive(tween),
+                          child: child,
+                        );
+                      },
                     ),
                   );
                 },
@@ -218,11 +342,24 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // Navigasi ke form tambah layanan
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Navigasi ke form tambah layanan'),
-                      duration: Duration(seconds: 2),
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          const AddServiceScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOut;
+
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
+
+                        return SlideTransition(
+                          position: animation.drive(tween),
+                          child: child,
+                        );
+                      },
                     ),
                   );
                 },
@@ -234,49 +371,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-              size: isSelected ? 26 : 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildPageContent(int index) {
     switch (index) {
       case 0:
@@ -284,7 +378,6 @@ class _MainScreenState extends State<MainScreen> {
       case 1:
         return const ExploreScreen(key: ValueKey(1));
       case 2:
-        // Untuk index 2 (plus button), kembali ke home sebagai default
         return const HomeScreen(key: ValueKey(2));
       case 3:
         return const AgendaScreen(key: ValueKey(3));

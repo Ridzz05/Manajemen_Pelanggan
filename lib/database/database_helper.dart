@@ -33,15 +33,32 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
+    await _createBusinessProfilesTable(db);
     await _createCustomersTable(db);
     await _createServicesTable(db);
-    await _createBusinessProfilesTable(db);
-    await _insertDummyData(db);
     await _insertDefaultBusinessProfile(db);
+    await _insertDummyData(db);
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database upgrades if needed
+  }
+
+  Future _createBusinessProfilesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE business_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        business_name TEXT NOT NULL,
+        business_description TEXT NOT NULL,
+        business_logo TEXT NOT NULL,
+        business_email TEXT NOT NULL,
+        business_phone TEXT NOT NULL,
+        business_address TEXT NOT NULL,
+        business_website TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future _createCustomersTable(Database db) async {
@@ -71,6 +88,11 @@ class DatabaseHelper {
         updated_at TEXT NOT NULL
       )
     ''');
+  }
+
+  Future _insertDefaultBusinessProfile(Database db) async {
+    final defaultProfile = BusinessProfile.defaultProfile();
+    await db.insert('business_profiles', defaultProfile.toMap());
   }
 
   Future _insertDummyData(Database db) async {
@@ -174,6 +196,31 @@ class DatabaseHelper {
     for (var service in services) {
       await db.insert('services', service.toMap());
     }
+  }
+
+  // Business Profile CRUD Operations
+  Future<BusinessProfile?> getBusinessProfile() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('business_profiles', limit: 1);
+    if (maps.isNotEmpty) {
+      return BusinessProfile.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<int> insertBusinessProfile(BusinessProfile profile) async {
+    final db = await database;
+    return await db.insert('business_profiles', profile.toMap());
+  }
+
+  Future<int> updateBusinessProfile(BusinessProfile profile) async {
+    final db = await database;
+    return await db.update(
+      'business_profiles',
+      profile.toMap(),
+      where: 'id = ?',
+      whereArgs: [profile.id],
+    );
   }
 
   // Customer CRUD Operations
