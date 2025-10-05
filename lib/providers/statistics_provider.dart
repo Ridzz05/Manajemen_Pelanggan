@@ -41,8 +41,8 @@ class StatisticsProvider extends ChangeNotifier {
       // Generate pie chart data
       final pieChartData = _generatePieChartData(categoryCount);
 
-      // Generate monthly growth data (dummy data for now)
-      final monthlyGrowthData = _generateMonthlyGrowthData();
+      // Get real monthly growth data from database
+      final monthlyGrowthData = await _generateMonthlyGrowthDataFromDBAsync();
 
       _statistics = StatisticsData(
         totalCustomers: customers.length,
@@ -92,28 +92,35 @@ class StatisticsProvider extends ChangeNotifier {
     }).toList();
   }
 
-  List<BarChartGroupData> _generateMonthlyGrowthData() {
-    // Dummy data untuk 6 bulan terakhir
-    final customers = [12, 19, 15, 25, 22, 18];
-    final services = [8, 15, 12, 20, 18, 14];
+  Future<List<BarChartGroupData>> _generateMonthlyGrowthDataFromDBAsync() async {
+    try {
+      final dbHelper = DatabaseHelper.instance;
+      final growthData = await dbHelper.getMonthlyGrowthData(months: 6);
 
-    return List.generate(6, (index) {
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: customers[index].toDouble(),
-            color: Colors.blue,
-            width: 12,
-          ),
-          BarChartRodData(
-            toY: services[index].toDouble(),
-            color: Colors.green,
-            width: 12,
-          ),
-        ],
-      );
-    });
+      final customers = growthData['customers'] ?? [];
+      final services = growthData['services'] ?? [];
+
+      return List.generate(6, (index) {
+        return BarChartGroupData(
+          x: index,
+          barRods: [
+            BarChartRodData(
+              toY: customers[index].toDouble(),
+              color: Colors.blue,
+              width: 12,
+            ),
+            BarChartRodData(
+              toY: services[index].toDouble(),
+              color: Colors.green,
+              width: 12,
+            ),
+          ],
+        );
+      });
+    } catch (e) {
+      print('Error generating monthly growth data: $e');
+      return [];
+    }
   }
 
   Future<void> refreshData() async {

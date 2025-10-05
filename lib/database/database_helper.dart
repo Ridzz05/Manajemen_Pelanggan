@@ -344,4 +344,54 @@ class DatabaseHelper {
     }
     return categoryCount;
   }
+
+  // Get monthly growth data for the last 6 months
+  Future<Map<String, List<int>>> getMonthlyGrowthData({int months = 6}) async {
+    final db = await database;
+
+    // Get current date and calculate start date (6 months ago)
+    final now = DateTime.now();
+    final startDate = DateTime(now.year, now.month - months + 1, 1);
+
+    // Query customers count by month
+    final customerResult = await db.rawQuery(
+      'SELECT strftime(\'%Y-%m\', created_at) as month, COUNT(*) as count FROM customers WHERE created_at >= ? GROUP BY strftime(\'%Y-%m\', created_at) ORDER BY month ASC',
+      [startDate.toIso8601String()],
+    );
+
+    // Query services count by month
+    final serviceResult = await db.rawQuery(
+      'SELECT strftime(\'%Y-%m\', created_at) as month, COUNT(*) as count FROM services WHERE created_at >= ? GROUP BY strftime(\'%Y-%m\', created_at) ORDER BY month ASC',
+      [startDate.toIso8601String()],
+    );
+
+    // Convert results to maps
+    Map<String, int> customerCounts = {};
+    Map<String, int> serviceCounts = {};
+
+    for (var row in customerResult) {
+      customerCounts[row['month'] as String] = row['count'] as int;
+    }
+
+    for (var row in serviceResult) {
+      serviceCounts[row['month'] as String] = row['count'] as int;
+    }
+
+    // Generate data for the last 6 months (fill missing months with 0)
+    List<int> customers = [];
+    List<int> services = [];
+
+    for (int i = 0; i < months; i++) {
+      final month = DateTime(now.year, now.month - i, 1);
+      final monthKey = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+
+      customers.insert(0, customerCounts[monthKey] ?? 0);
+      services.insert(0, serviceCounts[monthKey] ?? 0);
+    }
+
+    return {
+      'customers': customers,
+      'services': services,
+    };
+  }
 }
