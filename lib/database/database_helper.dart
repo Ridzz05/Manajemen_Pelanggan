@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 import 'dart:io';
+import '../models/business_profile.dart';
 import '../models/customer.dart';
 import '../models/service.dart';
 
@@ -34,7 +35,9 @@ class DatabaseHelper {
   Future _onCreate(Database db, int version) async {
     await _createCustomersTable(db);
     await _createServicesTable(db);
+    await _createBusinessProfilesTable(db);
     await _insertDummyData(db);
+    await _insertDefaultBusinessProfile(db);
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
