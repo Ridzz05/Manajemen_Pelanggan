@@ -21,16 +21,19 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
 
-  String _selectedCategory = 'Perawatan';
+  final TextEditingController _newCategoryController = TextEditingController();
+  String _selectedCategory = 'Website';
   final _formKey = GlobalKey<FormState>();
+  final _categoryFormKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _showAddCategoryForm = false;
 
-  final List<String> _categories = [
-    'Perawatan',
-    'Perbaikan',
-    'Pembersihan',
-    'Modifikasi',
-  ];
+  // Get categories from provider
+  List<String> get _categories {
+    final serviceProvider = context.watch<ServiceProvider>();
+    final categories = serviceProvider.categories.where((cat) => cat != 'Semua').toList();
+    return categories.isEmpty ? ['Website', 'Aplikasi', 'Desain'] : categories;
+  }
 
   @override
   void initState() {
