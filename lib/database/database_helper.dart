@@ -143,65 +143,15 @@ class DatabaseHelper {
     for (var customer in customers) {
       await db.insert('customers', customer.toMap());
     }
-
-    // Insert dummy services
-    final services = [
-      Service(
-        name: 'Cuci Mobil',
-        description: 'Layanan cuci mobil lengkap dengan wax',
-        price: 50000,
-        duration: 60,
-        category: 'Perawatan',
-        createdAt: DateTime.now().subtract(const Duration(days: 35)),
-        updatedAt: DateTime.now(),
-      ),
-      Service(
-        name: 'Ganti Oli',
-        description: 'Penggantian oli mesin dan filter',
-        price: 150000,
-        duration: 45,
-        category: 'Perawatan',
-        createdAt: DateTime.now().subtract(const Duration(days: 28)),
-        updatedAt: DateTime.now(),
-      ),
-      Service(
-        name: 'Tune Up',
-        description: 'Tune up mesin dan penggantian busi',
-        price: 300000,
-        duration: 120,
-        category: 'Perbaikan',
-        createdAt: DateTime.now().subtract(const Duration(days: 21)),
-        updatedAt: DateTime.now(),
-      ),
-      Service(
-        name: 'Ban Tubeless',
-        description: 'Pemasangan ban tubeless baru',
-        price: 80000,
-        duration: 30,
-        category: 'Perbaikan',
-        createdAt: DateTime.now().subtract(const Duration(days: 14)),
-        updatedAt: DateTime.now(),
-      ),
-      Service(
-        name: 'Detailing Interior',
-        description: 'Pembersihan interior mobil secara menyeluruh',
-        price: 200000,
-        duration: 90,
-        category: 'Perawatan',
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-
-    for (var service in services) {
-      await db.insert('services', service.toMap());
-    }
   }
 
   // Business Profile CRUD Operations
   Future<BusinessProfile?> getBusinessProfile() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('business_profiles', limit: 1);
+    final List<Map<String, dynamic>> maps = await db.query(
+      'business_profiles',
+      limit: 1,
+    );
     if (maps.isNotEmpty) {
       return BusinessProfile.fromMap(maps.first);
     }
@@ -226,7 +176,10 @@ class DatabaseHelper {
   // Customer CRUD Operations
   Future<List<Customer>> getAllCustomers() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('customers', orderBy: 'created_at DESC');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'customers',
+      orderBy: 'created_at DESC',
+    );
     return List.generate(maps.length, (i) => Customer.fromMap(maps[i]));
   }
 
@@ -260,17 +213,16 @@ class DatabaseHelper {
 
   Future<int> deleteCustomer(int id) async {
     final db = await database;
-    return await db.delete(
-      'customers',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('customers', where: 'id = ?', whereArgs: [id]);
   }
 
   // Service CRUD Operations
   Future<List<Service>> getAllServices() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('services', orderBy: 'created_at DESC');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'services',
+      orderBy: 'created_at DESC',
+    );
     return List.generate(maps.length, (i) => Service.fromMap(maps[i]));
   }
 
@@ -304,11 +256,7 @@ class DatabaseHelper {
 
   Future<int> deleteService(int id) async {
     final db = await database;
-    return await db.delete(
-      'services',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('services', where: 'id = ?', whereArgs: [id]);
   }
 
   // Statistics methods
@@ -383,15 +331,13 @@ class DatabaseHelper {
 
     for (int i = 0; i < months; i++) {
       final month = DateTime(now.year, now.month - i, 1);
-      final monthKey = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+      final monthKey =
+          '${month.year}-${month.month.toString().padLeft(2, '0')}';
 
       customers.insert(0, customerCounts[monthKey] ?? 0);
       services.insert(0, serviceCounts[monthKey] ?? 0);
     }
 
-    return {
-      'customers': customers,
-      'services': services,
-    };
+    return {'customers': customers, 'services': services};
   }
 }

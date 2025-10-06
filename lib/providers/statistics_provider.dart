@@ -54,7 +54,6 @@ class StatisticsProvider extends ChangeNotifier {
         serviceDistributionData: pieChartData,
         monthlyGrowthData: monthlyGrowthData,
       );
-
     } catch (e) {
       print('Error loading statistics: $e');
       _statistics = StatisticsData.empty();
@@ -64,7 +63,9 @@ class StatisticsProvider extends ChangeNotifier {
     }
   }
 
-  List<PieChartSectionData> _generatePieChartData(Map<String, int> categoryCount) {
+  List<PieChartSectionData> _generatePieChartData(
+    Map<String, int> categoryCount,
+  ) {
     final colors = [
       Colors.blue,
       Colors.green,
@@ -92,7 +93,8 @@ class StatisticsProvider extends ChangeNotifier {
     }).toList();
   }
 
-  Future<List<BarChartGroupData>> _generateMonthlyGrowthDataFromDBAsync() async {
+  Future<List<BarChartGroupData>>
+  _generateMonthlyGrowthDataFromDBAsync() async {
     try {
       final dbHelper = DatabaseHelper.instance;
       final growthData = await dbHelper.getMonthlyGrowthData(months: 6);

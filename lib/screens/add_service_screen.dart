@@ -26,13 +26,31 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   final _formKey = GlobalKey<FormState>();
   final _categoryFormKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _showAddCategoryForm = false;
 
-  // Get categories from provider
+  // Get categories from provider (read-only version for dialogs)
+  List<String> get _categoriesReadOnly {
+    final serviceProvider = context.read<ServiceProvider>();
+    final categories = serviceProvider.categories.where((cat) => cat != 'Semua').toList();
+    return categories.isEmpty ? ['Website', 'Aplikasi', 'Desain'] : categories;
+  }
+
+  // Get categories from provider (watch version for dropdown updates)
   List<String> get _categories {
     final serviceProvider = context.watch<ServiceProvider>();
     final categories = serviceProvider.categories.where((cat) => cat != 'Semua').toList();
     return categories.isEmpty ? ['Website', 'Aplikasi', 'Desain'] : categories;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Ensure selected category is always valid
+    final availableCategories = _categoriesReadOnly;
+    if (!availableCategories.contains(_selectedCategory) && availableCategories.isNotEmpty) {
+      setState(() {
+        _selectedCategory = availableCategories.first;
+      });
+    }
   }
 
   @override
@@ -65,6 +83,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     _descriptionController.dispose();
     _priceController.dispose();
     _durationController.dispose();
+    _newCategoryController.dispose();
     super.dispose();
   }
 
@@ -377,67 +396,96 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
                   const SizedBox(height: 16),
 
-                  // Category Dropdown
-                  DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Kategori',
-                      prefixIcon: Icon(
-                        Icons.category_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Row(
-                          children: [
-                            Icon(
-                              _getCategoryIcon(category),
-                              color: _getCategoryColor(category),
-                              size: 20,
+                  // Category Section
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _selectedCategory,
+                          decoration: InputDecoration(
+                            labelText: 'Kategori',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 8),
-                            Text(category),
-                          ],
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withOpacity(0.3),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.red),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
+                          ),
+                          items: _categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(category),
+                                    color: _getCategoryColor(category),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(category),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value!;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Kategori harus dipilih';
+                            }
+                            return null;
+                          },
                         ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value!;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Kategori harus dipilih';
-                      }
-                      return null;
-                    },
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: IconButton(
+                          onPressed: () {
+                            print('Add category button pressed'); // Debug log
+                            _showAddCategoryDialog(context);
+                          },
+                          icon: Icon(
+                            Icons.add_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          tooltip: 'Tambah Kategori Baru',
+                          style: IconButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 32),
@@ -626,24 +674,88 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     }
   }
 
-  void _addNewCategory() {
-    if (_categoryFormKey.currentState!.validate()) {
-      final newCategory = _newCategoryController.text.trim();
-      if (newCategory.isNotEmpty && !_categories.contains(newCategory)) {
-        setState(() {
-          _selectedCategory = newCategory;
-          _showAddCategoryForm = false;
-          _newCategoryController.clear();
-        });
+  void _showAddCategoryDialog(BuildContext context) {
+    print('Showing add category dialog'); // Debug log
+    // Get current categories before showing dialog
+    final currentCategories = _categoriesReadOnly;
+    print('Current categories: $currentCategories'); // Debug log
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kategori "$newCategory" berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text('Tambah Kategori Baru'),
+          content: Form(
+            key: _categoryFormKey,
+            child: TextFormField(
+              controller: _newCategoryController,
+              decoration: InputDecoration(
+                labelText: 'Nama Kategori',
+                hintText: 'Masukkan nama kategori baru',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama kategori tidak boleh kosong';
+                }
+                if (currentCategories.contains(value.trim())) {
+                  return 'Kategori sudah ada';
+                }
+                return null;
+              },
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _newCategoryController.clear();
+              },
+              child: Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                print('Tambah button pressed in dialog'); // Debug log
+                if (_categoryFormKey.currentState!.validate()) {
+                  _addNewCategory();
+                  Navigator.of(dialogContext).pop();
+                }
+              },
+              child: Text('Tambah'),
+            ),
+          ],
         );
-      }
+      },
+    );
+  }
+
+  void _addNewCategory() {
+    print('Adding new category'); // Debug log
+    final newCategory = _newCategoryController.text.trim();
+    final currentCategories = _categoriesReadOnly;
+    print('New category text: "$newCategory"'); // Debug log
+    print('Current categories: $currentCategories'); // Debug log
+
+    if (newCategory.isNotEmpty && !currentCategories.contains(newCategory)) {
+      print('Category is valid, adding...'); // Debug log
+      setState(() {
+        _selectedCategory = newCategory;
+        _newCategoryController.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Kategori "$newCategory" berhasil ditambahkan'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      print('Category validation failed - empty: ${newCategory.isEmpty}, exists: ${currentCategories.contains(newCategory)}'); // Debug log
     }
   }
 
