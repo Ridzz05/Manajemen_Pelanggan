@@ -626,6 +626,27 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     }
   }
 
+  void _addNewCategory() {
+    if (_categoryFormKey.currentState!.validate()) {
+      final newCategory = _newCategoryController.text.trim();
+      if (newCategory.isNotEmpty && !_categories.contains(newCategory)) {
+        setState(() {
+          _selectedCategory = newCategory;
+          _showAddCategoryForm = false;
+          _newCategoryController.clear();
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kategori "$newCategory" berhasil ditambahkan'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _saveService() async {
     if (!_formKey.currentState!.validate()) {
       return;
