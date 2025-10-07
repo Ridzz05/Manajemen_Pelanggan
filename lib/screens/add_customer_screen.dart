@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/customer_provider.dart';
+import '../providers/service_provider.dart';
 import '../models/customer.dart';
 
 class AddCustomerScreen extends StatefulWidget {
@@ -17,9 +18,12 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
   late Animation<Offset> _slideAnimation;
 
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _contactValueController = TextEditingController();
+
+  String _selectedContactMethod = 'WA Business';
+  final List<String> _availableContactMethods = ['WA Business', 'Telegram', 'Email'];
+  int? _selectedServiceId;
+  String? _selectedServiceName;
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -58,9 +62,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
   void dispose() {
     _animationController.dispose();
     _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
+    _contactValueController.dispose();
     super.dispose();
   }
 
@@ -217,136 +219,184 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
 
                   const SizedBox(height: 16),
 
-                  // Email Field
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'Masukkan alamat email',
-                      prefixIcon: Icon(
-                        Icons.email_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                  // Contact Method and Value Section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Contact Method Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _selectedContactMethod,
+                        decoration: InputDecoration(
+                          labelText: 'Metode Kontak',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                         ),
+                        items: _availableContactMethods.map((method) {
+                          return DropdownMenuItem(
+                            value: method,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _getContactMethodIcon(method),
+                                  color: _getContactMethodColor(method),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(method),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _selectedContactMethod = value;
+                              _contactValueController.clear(); // Clear value when method changes
+                            });
+                          }
+                        },
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
+                      const SizedBox(height: 16),
+                      // Contact Value Input
+                      TextFormField(
+                        decoration: InputDecoration(
+                          labelText: _getContactValueLabel(_selectedContactMethod),
+                          hintText: _getContactValueHint(_selectedContactMethod),
+                          prefixIcon: Icon(
+                            _getContactMethodIcon(_selectedContactMethod),
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
+                        keyboardType: _getContactValueKeyboardType(_selectedContactMethod),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '${_getContactValueLabel(_selectedContactMethod)} tidak boleh kosong';
+                          }
+                          if (_selectedContactMethod == 'Email' && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                            return 'Format email tidak valid';
+                          }
+                          if (_selectedContactMethod == 'WA Business' && !RegExp(r'^[0-9+\-\s()]+$').hasMatch(value)) {
+                            return 'Format nomor WA tidak valid';
+                          }
+                          return null;
+                        },
                       ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Email tidak boleh kosong';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Format email tidak valid';
-                      }
-                      return null;
-                    },
+                    ],
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Phone Field
-                  TextFormField(
-                    controller: _phoneController,
-                    decoration: InputDecoration(
-                      labelText: 'No. Telepon',
-                      hintText: 'Masukkan nomor telepon',
-                      prefixIcon: Icon(
-                        Icons.phone_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    keyboardType: TextInputType.phone,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Nomor telepon tidak boleh kosong';
-                      }
-                      return null;
-                    },
-                  ),
+                  // Service Selection Field
+                  Consumer<ServiceProvider>(
+                    builder: (context, serviceProvider, child) {
+                      final services = serviceProvider.services;
 
-                  const SizedBox(height: 16),
-
-                  // Address Field
-                  TextFormField(
-                    controller: _addressController,
-                    decoration: InputDecoration(
-                      labelText: 'Alamat',
-                      hintText: 'Masukkan alamat lengkap pelanggan',
-                      prefixIcon: Icon(
-                        Icons.location_on_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      return DropdownButtonFormField<int>(
+                        value: _selectedServiceId,
+                        decoration: InputDecoration(
+                          labelText: 'Layanan yang Dipesan',
+                          hintText: 'Pilih layanan yang dipesan pelanggan',
+                          prefixIcon: Icon(
+                            Icons.business_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Colors.red),
+                          ),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Alamat tidak boleh kosong';
-                      }
-                      return null;
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Tidak ada layanan'),
+                          ),
+                          ...services.map((service) {
+                            return DropdownMenuItem(
+                              value: service.id,
+                              child: Text('${service.name} - Rp ${service.price} (${service.durationPeriod})'),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedServiceId = value;
+                            if (value != null) {
+                              final selectedService = services.firstWhere((s) => s.id == value);
+                              _selectedServiceName = selectedService.name;
+                            } else {
+                              _selectedServiceName = null;
+                            }
+                          });
+                        },
+                        validator: (value) {
+                          // Tidak wajib memilih layanan, jadi tidak perlu validasi ketat
+                          return null;
+                        },
+                      );
                     },
                   ),
 
@@ -406,9 +456,11 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
     try {
       final customer = Customer(
         name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
+        contactMethod: _selectedContactMethod,
+        contactValue: _contactValueController.text.trim(),
+        address: '', // Address field removed, set to empty string
+        selectedServiceId: _selectedServiceId,
+        selectedServiceName: _selectedServiceName,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -450,6 +502,72 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
           _isLoading = false;
         });
       }
+    }
+  }
+
+  // Helper methods for contact method
+  IconData _getContactMethodIcon(String method) {
+    switch (method) {
+      case 'WA Business':
+        return Icons.business_rounded;
+      case 'Telegram':
+        return Icons.telegram_rounded;
+      case 'Email':
+        return Icons.email_rounded;
+      default:
+        return Icons.contact_mail_rounded;
+    }
+  }
+
+  Color _getContactMethodColor(String method) {
+    switch (method) {
+      case 'WA Business':
+        return Colors.green;
+      case 'Telegram':
+        return Colors.blue;
+      case 'Email':
+        return Colors.orange;
+      default:
+        return Theme.of(context).colorScheme.primary;
+    }
+  }
+
+  String _getContactValueLabel(String method) {
+    switch (method) {
+      case 'WA Business':
+        return 'No. WA Business';
+      case 'Telegram':
+        return 'Username Telegram';
+      case 'Email':
+        return 'Alamat Email';
+      default:
+        return 'Kontak';
+    }
+  }
+
+  String _getContactValueHint(String method) {
+    switch (method) {
+      case 'WA Business':
+        return 'Contoh: 08123456789';
+      case 'Telegram':
+        return 'Contoh: @username';
+      case 'Email':
+        return 'Contoh: nama@email.com';
+      default:
+        return 'Masukkan kontak';
+    }
+  }
+
+  TextInputType _getContactValueKeyboardType(String method) {
+    switch (method) {
+      case 'WA Business':
+        return TextInputType.phone;
+      case 'Telegram':
+        return TextInputType.text;
+      case 'Email':
+        return TextInputType.emailAddress;
+      default:
+        return TextInputType.text;
     }
   }
 }

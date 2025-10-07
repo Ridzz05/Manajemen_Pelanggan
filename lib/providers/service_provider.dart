@@ -9,17 +9,47 @@ class ServiceProvider extends ChangeNotifier {
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
+  // Cache for categories to avoid repeated computation
+  List<String>? _cachedCategories;
+  List<String>? _cachedAllCategories;
+
   List<Service> get services => _services;
   List<Service> get filteredServices => _filteredServices;
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
 
-  // Get unique categories
+  // Get unique categories (excluding placeholder categories) with caching
   List<String> get categories {
-    final categories = _services.map((service) => service.category).toSet().toList();
+    if (_cachedCategories != null) return _cachedCategories!;
+
+    final categories = _services
+        .where((service) => !service.name.startsWith('Kategori: '))
+        .map((service) => service.category)
+        .toSet()
+        .toList();
     categories.insert(0, 'Semua');
+    _cachedCategories = categories;
     return categories;
+  }
+
+  // Get all categories including placeholders with caching
+  List<String> get allCategories {
+    if (_cachedAllCategories != null) return _cachedAllCategories!;
+
+    final categories = _services
+        .map((service) => service.category)
+        .toSet()
+        .toList();
+    categories.insert(0, 'Semua');
+    _cachedAllCategories = categories;
+    return categories;
+  }
+
+  // Clear cache when services are updated
+  void _clearCategoryCache() {
+    _cachedCategories = null;
+    _cachedAllCategories = null;
   }
 
   Future<void> loadServices() async {
@@ -30,6 +60,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       _services = await dbHelper.getAllServices();
       _filteredServices = _services;
+      _clearCategoryCache(); // Clear cache when services are loaded
     } catch (e) {
       print('Error loading services: $e');
       _services = [];
@@ -62,7 +93,6 @@ class ServiceProvider extends ChangeNotifier {
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((service) {
         return service.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               service.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                service.category.toLowerCase().contains(_searchQuery.toLowerCase());
       }).toList();
     }
@@ -76,7 +106,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final id = await dbHelper.insertService(service);
       if (id > 0) {
-        await loadServices(); // Refresh list
+        await loadServices(); // Refresh list and clear cache
         return true;
       }
       return false;
@@ -91,7 +121,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final rowsAffected = await dbHelper.updateService(service);
       if (rowsAffected > 0) {
-        await loadServices(); // Refresh list
+        await loadServices(); // Refresh list and clear cache
         return true;
       }
       return false;
@@ -106,7 +136,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final rowsAffected = await dbHelper.deleteService(id);
       if (rowsAffected > 0) {
-        await loadServices(); // Refresh list
+        await loadServices(); // Refresh list and clear cache
         return true;
       }
       return false;

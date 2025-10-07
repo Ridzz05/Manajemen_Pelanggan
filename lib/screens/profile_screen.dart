@@ -142,13 +142,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // Profile Logo
             Container(
-              width: 60,
               height: 60,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  color: Theme.of(context).colorScheme.primary.withAlpha(50),
                   width: 2,
                 ),
               ),
@@ -291,7 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -312,6 +311,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onTap: () async {
                   Navigator.pop(context);
                   final imagePath = await profileProvider.pickAndSaveImage();
+                  if (!context.mounted) return;
+
                   if (imagePath != null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -335,7 +336,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -359,6 +360,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () async {
                     Navigator.pop(context);
                     final success = await profileProvider.deleteProfilePhoto();
+                    if (!context.mounted) return;
+
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -456,6 +459,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
 
                 final success = await profileProvider.updateProfile(updatedProfile);
+
+                if (!context.mounted) return;
 
                 Navigator.of(context).pop();
 

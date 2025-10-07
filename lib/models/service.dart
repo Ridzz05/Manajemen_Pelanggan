@@ -1,9 +1,9 @@
 class Service {
   final int? id;
   final String name;
-  final String description;
+  // description field removed as requested
   final double price;
-  final int duration; // dalam menit
+  final String durationPeriod; // Changed from int duration to String durationPeriod (1 minggu, 2 minggu, 1 bulan)
   final String category;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -11,9 +11,8 @@ class Service {
   Service({
     this.id,
     required this.name,
-    required this.description,
     required this.price,
-    required this.duration,
+    required this.durationPeriod,
     required this.category,
     required this.createdAt,
     required this.updatedAt,
@@ -23,9 +22,8 @@ class Service {
     return {
       'id': id,
       'name': name,
-      'description': description,
       'price': price,
-      'duration': duration,
+      'duration_period': durationPeriod,
       'category': category,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -36,9 +34,8 @@ class Service {
     return Service(
       id: map['id'],
       name: map['name'],
-      description: map['description'],
       price: map['price'],
-      duration: map['duration'],
+      durationPeriod: map['duration_period'] ?? map['duration']?.toString() ?? '1 minggu', // Backward compatibility
       category: map['category'],
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
@@ -48,9 +45,8 @@ class Service {
   Service copyWith({
     int? id,
     String? name,
-    String? description,
     double? price,
-    int? duration,
+    String? durationPeriod,
     String? category,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -58,9 +54,8 @@ class Service {
     return Service(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
       price: price ?? this.price,
-      duration: duration ?? this.duration,
+      durationPeriod: durationPeriod ?? this.durationPeriod,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

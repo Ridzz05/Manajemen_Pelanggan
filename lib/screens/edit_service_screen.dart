@@ -1,33 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/service_provider.dart';
 import '../models/service.dart';
+import '../providers/service_provider.dart';
 
-class AddServiceScreen extends StatefulWidget {
-  const AddServiceScreen({super.key});
+class EditServiceScreen extends StatefulWidget {
+  final Service service;
+
+  const EditServiceScreen({super.key, required this.service});
 
   @override
-  State<AddServiceScreen> createState() => _AddServiceScreenState();
+  State<EditServiceScreen> createState() => _EditServiceScreenState();
 }
 
-class _AddServiceScreenState extends State<AddServiceScreen>
+class _EditServiceScreenState extends State<EditServiceScreen>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
-  final TextEditingController _newCategoryController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _priceController;
+  late final TextEditingController _newCategoryController;
 
   String _selectedCategory = 'Website';
-  String _selectedDurationPeriod = '1 minggu'; // Changed from duration controller to selected duration period
+  String _selectedDurationPeriod = '1 minggu';
   final Set<String> _availableCategories = {'Website', 'Aplikasi', 'Desain'};
-  final List<String> _availableDurationPeriods = ['1 minggu', '2 minggu', '3 minggu', '1 bulan']; // Duration period options
+  final List<String> _availableDurationPeriods = ['1 minggu', '2 minggu', '3 minggu', '1 bulan'];
 
   final _formKey = GlobalKey<FormState>();
   final _categoryFormKey = GlobalKey<FormState>();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize controllers with existing service data
+    _nameController = TextEditingController(text: widget.service.name);
+    _priceController = TextEditingController(text: widget.service.price.toString());
+    _selectedCategory = widget.service.category;
+    _selectedDurationPeriod = widget.service.durationPeriod;
+    _newCategoryController = TextEditingController();
+
+    // Initialize animations
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
+
+    // Start animation
+    _animationController.forward();
+  }
 
   @override
   void didChangeDependencies() {
@@ -56,29 +88,6 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    // Initialize animations
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
-
-    // Start animation
-    _animationController.forward();
-  }
-
-  @override
   void dispose() {
     _animationController.dispose();
     _nameController.dispose();
@@ -92,7 +101,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Tambah Layanan',
+          'Edit Layanan',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -111,7 +120,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
               return FadeTransition(
                 opacity: _fadeAnimation,
                 child: TextButton(
-                  onPressed: _isLoading ? null : _saveService,
+                  onPressed: _isLoading ? null : _updateService,
                   child: Text(
                     'Simpan',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -142,12 +151,12 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      ).colorScheme.secondary.withOpacity(0.05),
+                      ).colorScheme.primary.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: Theme.of(
                           context,
-                        ).colorScheme.secondary.withOpacity(0.2),
+                        ).colorScheme.primary.withOpacity(0.2),
                       ),
                     ),
                     child: Row(
@@ -157,12 +166,12 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                           decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).colorScheme.secondary.withOpacity(0.1),
+                            ).colorScheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            Icons.add_business_rounded,
-                            color: Theme.of(context).colorScheme.secondary,
+                            Icons.edit_rounded,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 24,
                           ),
                         ),
@@ -172,13 +181,13 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Tambah Layanan Baru',
+                                'Edit Layanan',
                                 style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Buat layanan baru dengan detail lengkap untuk pelanggan',
+                                'Perbarui informasi layanan yang sudah ada',
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: Theme.of(
@@ -195,7 +204,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
                   const SizedBox(height: 24),
 
-                  // Form Fields
+                  // Form Fields (same as AddServiceScreen)
                   Text(
                     'Detail Layanan',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -356,7 +365,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
                   const SizedBox(height: 16),
 
-                  // Category Section
+                  // Category Section (same as AddServiceScreen)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -364,9 +373,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                         child: Consumer<ServiceProvider>(
                           builder: (context, serviceProvider, child) {
                             // Get categories from provider
-                            final providerCategories = serviceProvider.allCategories
-                                .where((cat) => cat != 'Semua')
-                                .toSet();
+                            final providerCategories = serviceProvider.allCategories.where((cat) => cat != 'Semua').toSet();
 
                             // Merge with local categories
                             final allCategories = providerCategories.union(_availableCategories).toList();
@@ -377,7 +384,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                             }
 
                             return DropdownButtonFormField<String>(
-                              key: const ValueKey('category_dropdown'), // Add key for better performance
+                              key: const ValueKey('edit_category_dropdown'), // Add key for better performance
                               value: _selectedCategory,
                               decoration: InputDecoration(
                                 labelText: 'Kategori',
@@ -410,7 +417,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                               ),
                               items: allCategories.map((category) {
                                 return DropdownMenuItem(
-                                  key: ValueKey('category_$category'), // Add key for each item
+                                  key: ValueKey('edit_category_$category'), // Add key for each item
                                   value: category,
                                   child: Row(
                                     children: [
@@ -447,12 +454,13 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                         width: 48,
                         height: 48,
                         child: IconButton(
-                          key: const ValueKey('add_category_button'),
                           onPressed: () {
-                            print('Add category button pressed'); // Debug log
                             _showAddCategoryDialog(context);
                           },
-                          icon: const Icon(Icons.add_rounded),
+                          icon: Icon(
+                            Icons.add_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           tooltip: 'Tambah Kategori Baru',
                           style: IconButton.styleFrom(
                             backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
@@ -467,112 +475,12 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
                   const SizedBox(height: 32),
 
-                  // Preview Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pratinjau',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: _getCategoryColor(
-                                  _selectedCategory,
-                                ).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                _getCategoryIcon(_selectedCategory),
-                                color: _getCategoryColor(_selectedCategory),
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _nameController.text.isEmpty
-                                        ? 'Nama Layanan'
-                                        : _nameController.text,
-                                    style: Theme.of(context).textTheme.bodyLarge
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              _priceController.text.isEmpty
-                                  ? 'Rp 0'
-                                  : 'Rp ${_priceController.text}',
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                            ),
-                            const SizedBox(width: 16),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getCategoryColor(
-                                  _selectedCategory,
-                                ).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _selectedCategory,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: _getCategoryColor(
-                                        _selectedCategory,
-                                      ),
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
                   // Submit Button
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _saveService,
+                      onPressed: _isLoading ? null : _updateService,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
@@ -591,7 +499,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
                               ),
                             )
                           : Text(
-                              'Tambah Layanan',
+                              'Perbarui Layanan',
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w600),
                             ),
@@ -639,8 +547,6 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   }
 
   void _showAddCategoryDialog(BuildContext context) {
-    print('Showing add category dialog'); // Debug log
-
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -680,7 +586,6 @@ class _AddServiceScreenState extends State<AddServiceScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                print('Tambah button pressed in dialog'); // Debug log
                 if (_categoryFormKey.currentState!.validate()) {
                   _addNewCategory();
                   Navigator.of(dialogContext).pop();
@@ -695,13 +600,9 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   }
 
   void _addNewCategory() {
-    print('Adding new category'); // Debug log
     final newCategory = _newCategoryController.text.trim();
 
     if (newCategory.isNotEmpty && !_availableCategories.contains(newCategory)) {
-      print('Category is valid, adding...'); // Debug log
-
-      // Add to available categories and update selected category
       setState(() {
         _availableCategories.add(newCategory);
         _selectedCategory = newCategory;
@@ -711,24 +612,10 @@ class _AddServiceScreenState extends State<AddServiceScreen>
       // Create a placeholder service entry for the new category
       _createPlaceholderServiceForCategory(newCategory);
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Kategori "$newCategory" berhasil ditambahkan'),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      print('Category validation failed - empty: ${newCategory.isEmpty}, exists: ${_availableCategories.contains(newCategory)}'); // Debug log
-
-      // Show error message if category already exists or is empty
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(newCategory.isEmpty
-              ? 'Nama kategori tidak boleh kosong'
-              : 'Kategori "$newCategory" sudah ada'),
-          backgroundColor: Colors.red,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -737,7 +624,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
   Future<void> _createPlaceholderServiceForCategory(String category) async {
     try {
-      // Create a placeholder service entry for the new category
+      // Create a minimal service entry just for the category
       final placeholderService = Service(
         name: 'Kategori: $category', // Placeholder name
         price: 0.0, // Zero price for placeholder
@@ -762,7 +649,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     }
   }
 
-  Future<void> _saveService() async {
+  Future<void> _updateService() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -772,22 +659,22 @@ class _AddServiceScreenState extends State<AddServiceScreen>
     });
 
     try {
-      final service = Service(
+      // Create updated service object
+      final updatedService = widget.service.copyWith(
         name: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
         durationPeriod: _selectedDurationPeriod,
         category: _selectedCategory,
-        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final success = await context.read<ServiceProvider>().addService(service);
+      // Update service in provider
+      final success = await context.read<ServiceProvider>().updateService(updatedService);
 
       if (success) {
-        // Show success message and navigate back
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Layanan "${service.name}" berhasil ditambahkan'),
+            content: Text('Layanan "${updatedService.name}" berhasil diperbarui'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -800,7 +687,7 @@ class _AddServiceScreenState extends State<AddServiceScreen>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Gagal menambahkan layanan. Silakan coba lagi.'),
+            content: Text('Gagal memperbarui layanan. Silakan coba lagi.'),
             backgroundColor: Colors.red,
           ),
         );

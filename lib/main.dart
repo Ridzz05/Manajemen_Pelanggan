@@ -9,6 +9,9 @@ import 'package:proyek_mahasiswa/providers/service_provider.dart';
 import 'package:proyek_mahasiswa/providers/profile_provider.dart';
 
 void main() {
+  // Initialize sqflite for desktop platforms
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -25,7 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ProfileProvider()),
       ],
       child: MaterialApp(
-        title: 'Manajemen Pelanggan AWB',
+        title: 'CRM',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         home: const MainScreen(),

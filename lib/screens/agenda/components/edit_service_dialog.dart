@@ -11,36 +11,32 @@ class EditServiceDialog extends StatefulWidget {
     super.key,
     required this.service,
   });
-
   @override
   State<EditServiceDialog> createState() => _EditServiceDialogState();
 }
 
 class _EditServiceDialogState extends State<EditServiceDialog> {
-  late TextEditingController _nameController;
-  late TextEditingController _descriptionController;
-  late TextEditingController _priceController;
-  late TextEditingController _durationController;
-  String _selectedCategory = '';
+  late final TextEditingController _nameController;
+  late final TextEditingController _priceController;
 
-  final List<String> _categories = ['Perawatan', 'Perbaikan', 'Pembersihan', 'Modifikasi'];
+  String _selectedCategory = 'Perawatan';
+  String _selectedDurationPeriod = '1 minggu';
+  final List<String> _availableCategories = ['Perawatan', 'Perbaikan', 'Pembersihan', 'Modifikasi'];
+  final List<String> _availableDurationPeriods = ['1 minggu', '2 minggu', '3 minggu', '1 bulan'];
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.service.name);
-    _descriptionController = TextEditingController(text: widget.service.description);
     _priceController = TextEditingController(text: widget.service.price.toString());
-    _durationController = TextEditingController(text: widget.service.duration.toString());
     _selectedCategory = widget.service.category;
+    _selectedDurationPeriod = widget.service.durationPeriod;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     _priceController.dispose();
-    _durationController.dispose();
     super.dispose();
   }
 
@@ -61,15 +57,6 @@ class _EditServiceDialogState extends State<EditServiceDialog> {
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi',
-                hintText: 'Masukkan deskripsi layanan',
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
-            TextField(
               controller: _priceController,
               decoration: const InputDecoration(
                 labelText: 'Harga (Rp)',
@@ -78,13 +65,22 @@ class _EditServiceDialogState extends State<EditServiceDialog> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _durationController,
+            DropdownButtonFormField<String>(
+              value: _selectedDurationPeriod,
               decoration: const InputDecoration(
-                labelText: 'Durasi (menit)',
-                hintText: 'Masukkan durasi dalam menit',
+                labelText: 'Durasi Layanan',
               ),
-              keyboardType: TextInputType.number,
+              items: _availableDurationPeriods.map((period) {
+                return DropdownMenuItem(
+                  value: period,
+                  child: Text(period),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedDurationPeriod = value!;
+                });
+              },
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -92,7 +88,7 @@ class _EditServiceDialogState extends State<EditServiceDialog> {
               decoration: const InputDecoration(
                 labelText: 'Kategori',
               ),
-              items: _categories.map((category) {
+              items: _availableCategories.map((category) {
                 return DropdownMenuItem(
                   value: category,
                   child: Text(category),
@@ -122,12 +118,10 @@ class _EditServiceDialogState extends State<EditServiceDialog> {
 
   void _handleSave() async {
     if (_nameController.text.isEmpty ||
-        _descriptionController.text.isEmpty ||
-        _priceController.text.isEmpty ||
-        _durationController.text.isEmpty) {
+        _priceController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Semua field harus diisi'),
+          content: Text('Nama dan harga layanan harus diisi'),
           backgroundColor: Colors.red,
         ),
       );
@@ -136,9 +130,8 @@ class _EditServiceDialogState extends State<EditServiceDialog> {
 
     final updatedService = widget.service.copyWith(
       name: _nameController.text,
-      description: _descriptionController.text,
       price: double.parse(_priceController.text),
-      duration: int.parse(_durationController.text),
+      durationPeriod: _selectedDurationPeriod,
       category: _selectedCategory,
       updatedAt: DateTime.now(),
     );

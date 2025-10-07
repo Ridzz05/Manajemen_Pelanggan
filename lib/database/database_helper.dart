@@ -8,7 +8,7 @@ import '../models/service.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'awb_management.db';
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 3; // Updated version for services table migration // Incremented version for migration
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -22,13 +22,23 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, _databaseName);
+    String path;
+    try {
+      // Try to get the application documents directory
+      final Directory documentsDirectory = await getApplicationDocumentsDirectory();
+      path = join(documentsDirectory.path, _databaseName);
+    } catch (e) {
+      // Fallback: Use a simple path for platforms where path_provider is not available
+      // This is a temporary workaround - in production, you'd want to handle this better
+      path = join('./', _databaseName);
+      print('Warning: Using fallback path for database. Error: $e');
+    }
+
     return await openDatabase(
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
+      onUpgrade: _onUpgrade, // Handle database upgrades
     );
   }
 
@@ -41,7 +51,115 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Handle database upgrades if needed
+    print('Upgrading database from version $oldVersion to $newVersion');
+
+    if (oldVersion < 2) {
+      try {
+        // Strategy: Drop and recreate customers table with new schema
+        await _recreateCustomersTable(db);
+      } catch (e) {
+        print('Error during database upgrade: $e');
+        // If all else fails, try the safer migration approach
+        await _migrateCustomersTableSafely(db);
+      }
+    }
+
+    if (oldVersion < 3) {
+      try {
+        // Strategy: Drop and recreate services table with new schema
+        await _recreateServicesTable(db);
+      } catch (e) {
+        print('Error during services table upgrade: $e');
+        // If all else fails, try the safer migration approach
+        await _migrateServicesTableSafely(db);
+      }
+    }
+  }
+
+  Future _migrateCustomersTableSafely(Database db) async {
+    try {
+      // First, let's check if the new columns already exist
+      final result = await db.rawQuery("PRAGMA table_info(customers)");
+      final columns = result.map((row) => row['name'] as String).toList();
+
+      // Add contact_method column if it doesn't exist
+      if (!columns.contains('contact_method')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN contact_method TEXT NOT NULL DEFAULT "Email"');
+        print('Added contact_method column');
+      }
+
+      // Add contact_value column if it doesn't exist
+      if (!columns.contains('contact_value')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN contact_value TEXT NOT NULL DEFAULT ""');
+        print('Added contact_value column');
+      }
+
+      // Make email column nullable if it exists
+      if (columns.contains('email')) {
+        try {
+          await db.execute('ALTER TABLE customers ALTER COLUMN email TEXT');
+          print('Made email column nullable');
+        } catch (e) {
+          print('Could not alter email column, it might already be nullable: $e');
+        }
+      }
+
+      // Migrate existing email data to new structure
+      await db.execute('UPDATE customers SET contact_method = "Email", contact_value = email WHERE email IS NOT NULL AND (contact_value IS NULL OR contact_value = "")');
+
+      print('Database migration completed successfully');
+    } catch (e) {
+      print('Error during safe database migration: $e');
+      throw e;
+    }
+  }
+
+  Future _recreateCustomersTable(Database db) async {
+    try {
+      print('Recreating customers table with new schema...');
+
+      // Create temporary table with new structure
+      await db.execute('''
+        CREATE TABLE customers_backup (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT,
+          contact_method TEXT NOT NULL DEFAULT 'Email',
+          contact_value TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '',
+          address TEXT NOT NULL DEFAULT '', -- Made optional
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      // Copy existing data to backup table, handling null email
+      await db.execute('''
+        INSERT INTO customers_backup (id, name, email, contact_method, contact_value, phone, address, created_at, updated_at)
+        SELECT
+          id,
+          name,
+          email,
+          'Email',
+          COALESCE(email, ''),
+          COALESCE(phone, ''),
+          COALESCE(address, ''),
+          created_at,
+          updated_at
+        FROM customers
+      ''');
+
+      // Drop old table
+      await db.execute('DROP TABLE customers');
+
+      // Rename backup table to customers
+      await db.execute('ALTER TABLE customers_backup RENAME TO customers');
+
+      print('Customers table recreated successfully');
+    } catch (e) {
+      print('Error recreating customers table: $e');
+      throw e;
+    }
   }
 
   Future _createBusinessProfilesTable(Database db) async {
@@ -66,9 +184,13 @@ class DatabaseHelper {
       CREATE TABLE customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        address TEXT NOT NULL,
+        email TEXT, -- Nullable for backward compatibility
+        contact_method TEXT NOT NULL DEFAULT 'Email',
+        contact_value TEXT NOT NULL,
+        phone TEXT NOT NULL DEFAULT '',
+        address TEXT NOT NULL DEFAULT '', -- Made optional with default empty string
+        selected_service_id INTEGER, -- ID layanan yang dipilih pelanggan
+        selected_service_name TEXT, -- Nama layanan yang dipilih
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -80,9 +202,8 @@ class DatabaseHelper {
       CREATE TABLE services (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        description TEXT NOT NULL,
         price REAL NOT NULL,
-        duration INTEGER NOT NULL,
+        duration_period TEXT NOT NULL DEFAULT '1 minggu',
         category TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -100,41 +221,46 @@ class DatabaseHelper {
     final customers = [
       Customer(
         name: 'John Doe',
-        email: 'john@example.com',
-        phone: '08123456789',
-        address: 'Jakarta Selatan',
+        contactMethod: 'WA Business',
+        contactValue: '08123456789',
+        phone: '08123456789', // Phone field kept for backward compatibility
+        address: '', // Address field removed, set to empty string
         createdAt: DateTime.now().subtract(const Duration(days: 30)),
         updatedAt: DateTime.now(),
       ),
       Customer(
         name: 'Jane Smith',
-        email: 'jane@example.com',
+        contactMethod: 'Telegram',
+        contactValue: '@janesmith',
         phone: '08198765432',
-        address: 'Jakarta Pusat',
+        address: '',
         createdAt: DateTime.now().subtract(const Duration(days: 25)),
         updatedAt: DateTime.now(),
       ),
       Customer(
         name: 'Bob Wilson',
-        email: 'bob@example.com',
+        contactMethod: 'Email',
+        contactValue: 'bob@example.com',
         phone: '08134567890',
-        address: 'Jakarta Utara',
+        address: '',
         createdAt: DateTime.now().subtract(const Duration(days: 20)),
         updatedAt: DateTime.now(),
       ),
       Customer(
         name: 'Alice Johnson',
-        email: 'alice@example.com',
+        contactMethod: 'WA Business',
+        contactValue: '08145678901',
         phone: '08145678901',
-        address: 'Jakarta Barat',
+        address: '',
         createdAt: DateTime.now().subtract(const Duration(days: 15)),
         updatedAt: DateTime.now(),
       ),
       Customer(
         name: 'Charlie Brown',
-        email: 'charlie@example.com',
+        contactMethod: 'Telegram',
+        contactValue: '@charliebrown',
         phone: '08156789012',
-        address: 'Jakarta Timur',
+        address: '',
         createdAt: DateTime.now().subtract(const Duration(days: 10)),
         updatedAt: DateTime.now(),
       ),
@@ -339,5 +465,74 @@ class DatabaseHelper {
     }
 
     return {'customers': customers, 'services': services};
+  }
+
+  Future _migrateServicesTableSafely(Database db) async {
+    try {
+      // First, let's check if the new columns already exist
+      final result = await db.rawQuery("PRAGMA table_info(services)");
+      final columns = result.map((row) => row['name'] as String).toList();
+
+      // Add duration_period column if it doesn't exist
+      if (!columns.contains('duration_period')) {
+        await db.execute('ALTER TABLE services ADD COLUMN duration_period TEXT NOT NULL DEFAULT "1 minggu"');
+        print('Added duration_period column');
+      }
+
+      // Update existing duration data to duration_period format
+      await db.execute('UPDATE services SET duration_period = CAST(duration AS TEXT) || " menit" WHERE duration IS NOT NULL');
+
+      print('Services table migration completed successfully');
+    } catch (e) {
+      print('Error during safe services table migration: $e');
+      throw e;
+    }
+  }
+
+  Future _recreateServicesTable(Database db) async {
+    try {
+      print('Recreating services table with new schema...');
+
+      // Create temporary table with new structure
+      await db.execute('''
+        CREATE TABLE services_backup (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          price REAL NOT NULL,
+          duration_period TEXT NOT NULL DEFAULT '1 minggu',
+          category TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      // Copy existing data to backup table, converting duration to duration_period
+      await db.execute('''
+        INSERT INTO services_backup (id, name, price, duration_period, category, created_at, updated_at)
+        SELECT
+          id,
+          name,
+          price,
+          CASE
+            WHEN duration IS NOT NULL THEN CAST(duration AS TEXT) || ' menit'
+            ELSE '1 minggu'
+          END,
+          category,
+          created_at,
+          updated_at
+        FROM services
+      ''');
+
+      // Drop old table
+      await db.execute('DROP TABLE services');
+
+      // Rename backup table to services
+      await db.execute('ALTER TABLE services_backup RENAME TO services');
+
+      print('Services table recreated successfully');
+    } catch (e) {
+      print('Error recreating services table: $e');
+      throw e;
+    }
   }
 }

@@ -38,8 +38,9 @@ class CustomerProvider extends ChangeNotifier {
     } else {
       _filteredCustomers = _customers.where((customer) {
         return customer.name.toLowerCase().contains(query.toLowerCase()) ||
-               customer.email.toLowerCase().contains(query.toLowerCase()) ||
-               customer.phone.contains(query);
+               (customer.email?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
+               customer.phone.contains(query) ||
+               customer.contactValue.toLowerCase().contains(query.toLowerCase());
       }).toList();
     }
     notifyListeners();
