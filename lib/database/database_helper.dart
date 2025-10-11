@@ -75,14 +75,14 @@ class DatabaseHelper {
       }
     }
 
-    if (oldVersion < 4) {
+    if (oldVersion < 5) {
       try {
-        // Add start_date and end_date columns to services table
-        await _migrateServicesTableToDates(db);
+        // Add selected_service_id and selected_service_name columns to customers table
+        await _migrateCustomersTableToServiceColumns(db);
       } catch (e) {
-        print('Error during services table date migration: $e');
+        print('Error during customers table service migration: $e');
         // If all else fails, try the safer migration approach
-        await _migrateServicesTableToDatesSafely(db);
+        await _migrateCustomersTableToServiceColumnsSafely(db);
       }
     }
   }
@@ -515,27 +515,79 @@ class DatabaseHelper {
     }
   }
 
-  Future _migrateServicesTableToDatesSafely(Database db) async {
+  Future _migrateCustomersTableToServiceColumnsSafely(Database db) async {
     try {
       // First, let's check if the new columns already exist
-      final result = await db.rawQuery("PRAGMA table_info(services)");
+      final result = await db.rawQuery("PRAGMA table_info(customers)");
       final columns = result.map((row) => row['name'] as String).toList();
 
-      // Add start_date column if it doesn't exist
-      if (!columns.contains('start_date')) {
-        await db.execute('ALTER TABLE services ADD COLUMN start_date TEXT');
-        print('Added start_date column');
+      // Add selected_service_id column if it doesn't exist
+      if (!columns.contains('selected_service_id')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN selected_service_id INTEGER');
+        print('Added selected_service_id column');
       }
 
-      // Add end_date column if it doesn't exist
-      if (!columns.contains('end_date')) {
-        await db.execute('ALTER TABLE services ADD COLUMN end_date TEXT');
-        print('Added end_date column');
+      // Add selected_service_name column if it doesn't exist
+      if (!columns.contains('selected_service_name')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN selected_service_name TEXT');
+        print('Added selected_service_name column');
       }
 
-      print('Services table date migration completed successfully');
+      print('Customers table service migration completed successfully');
     } catch (e) {
-      print('Error during safe services table date migration: $e');
+      print('Error during safe customers table service migration: $e');
+      throw e;
+    }
+  }
+
+  Future _migrateCustomersTableToServiceColumns(Database db) async {
+    try {
+      print('Migrating customers table to service columns...');
+
+      // Create temporary table with new structure
+      await db.execute('''
+        CREATE TABLE customers_backup (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          email TEXT,
+          contact_method TEXT NOT NULL DEFAULT 'Email',
+          contact_value TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '',
+          address TEXT NOT NULL DEFAULT '',
+          selected_service_id INTEGER,
+          selected_service_name TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      // Copy existing data to backup table
+      await db.execute('''
+        INSERT INTO customers_backup (id, name, email, contact_method, contact_value, phone, address, selected_service_id, selected_service_name, created_at, updated_at)
+        SELECT
+          id,
+          name,
+          email,
+          contact_method,
+          contact_value,
+          phone,
+          address,
+          NULL as selected_service_id,
+          NULL as selected_service_name,
+          created_at,
+          updated_at
+        FROM customers
+      ''');
+
+      // Drop old table
+      await db.execute('DROP TABLE customers');
+
+      // Rename backup table to customers
+      await db.execute('ALTER TABLE customers_backup RENAME TO customers');
+
+      print('Customers table migrated to service columns successfully');
+    } catch (e) {
+      print('Error migrating customers table to service columns: $e');
       throw e;
     }
   }
