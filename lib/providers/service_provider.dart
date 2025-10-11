@@ -14,10 +14,9 @@ class ServiceProvider extends ChangeNotifier {
   List<String>? _cachedAllCategories;
 
   List<Service> get services => _services;
+  List<Service> get activeServices => _services.where((service) => service.isActive).toList();
   List<Service> get filteredServices => _filteredServices;
   bool get isLoading => _isLoading;
-  String get searchQuery => _searchQuery;
-  String get selectedCategory => _selectedCategory;
 
   // Get unique categories (excluding placeholder categories) with caching
   List<String> get categories {

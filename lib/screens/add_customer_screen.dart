@@ -335,13 +335,13 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                   // Service Selection Field
                   Consumer<ServiceProvider>(
                     builder: (context, serviceProvider, child) {
-                      final services = serviceProvider.services;
+                      final services = serviceProvider.activeServices; // Changed to activeServices
 
                       return DropdownButtonFormField<int>(
                         value: _selectedServiceId,
                         decoration: InputDecoration(
                           labelText: 'Layanan yang Dipesan',
-                          hintText: 'Pilih layanan yang dipesan pelanggan',
+                          hintText: 'Pilih layanan yang sedang berjalan',
                           prefixIcon: Icon(
                             Icons.business_rounded,
                             color: Theme.of(context).colorScheme.primary,
@@ -372,12 +372,15 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                         items: [
                           const DropdownMenuItem(
                             value: null,
-                            child: Text('Tidak ada layanan'),
+                            child: Text('Tidak ada layanan aktif'),
                           ),
                           ...services.map((service) {
+                            final duration = service.durationInDays != null
+                                ? '${service.durationInDays} hari'
+                                : 'Tidak ditentukan';
                             return DropdownMenuItem(
                               value: service.id,
-                              child: Text('${service.name} - Rp ${service.price} (${service.durationPeriod})'),
+                              child: Text('${service.name} - Rp ${service.price} ($duration)'),
                             );
                           }).toList(),
                         ],

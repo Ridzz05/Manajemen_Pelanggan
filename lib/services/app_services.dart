@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Service class for handling common validation and formatting operations
 class ValidationService {
   /// Validate service form data
   static Map<String, String?> validateServiceForm({
@@ -11,7 +10,7 @@ class ValidationService {
     required String category,
   }) {
     Map<String, String?> errors = {};
-
+ 
     if (name.trim().isEmpty) {
       errors['name'] = 'Nama layanan tidak boleh kosong';
     }
@@ -95,7 +94,6 @@ class ValidationService {
 
     // Should start with 8 (mobile) or country code 62
     return cleanPhone.startsWith('8') ||
-           cleanPhone.startsWith('62') ||
            cleanPhone.startsWith('0');
   }
 }

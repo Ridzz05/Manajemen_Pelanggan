@@ -21,9 +21,9 @@ class _AddServiceScreenState extends State<AddServiceScreen>
   final TextEditingController _newCategoryController = TextEditingController();
 
   String _selectedCategory = 'Website';
-  String _selectedDurationPeriod = '1 minggu'; // Changed from duration controller to selected duration period
+  DateTime? _startDate;
+  DateTime? _endDate;
   final Set<String> _availableCategories = {'Website', 'Aplikasi', 'Desain'};
-  final List<String> _availableDurationPeriods = ['1 minggu', '2 minggu', '3 minggu', '1 bulan']; // Duration period options
 
   final _formKey = GlobalKey<FormState>();
   final _categoryFormKey = GlobalKey<FormState>();
@@ -300,58 +300,157 @@ class _AddServiceScreenState extends State<AddServiceScreen>
 
                   const SizedBox(height: 16),
 
-                  // Duration Period Field
-                  DropdownButtonFormField<String>(
-                    value: _selectedDurationPeriod,
-                    decoration: InputDecoration(
-                      labelText: 'Durasi Layanan',
-                      hintText: 'Pilih durasi layanan',
-                      prefixIcon: Icon(
-                        Icons.timer_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    items: _availableDurationPeriods.map((period) {
-                      return DropdownMenuItem(
-                        value: period,
-                        child: Text(period),
+                  // Start Date Field
+                  InkWell(
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate ?? DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // 2 years from now
                       );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
+                      if (pickedDate != null) {
                         setState(() {
-                          _selectedDurationPeriod = value;
+                          _startDate = pickedDate;
+                          // If end date is before start date, clear it
+                          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+                            _endDate = null;
+                          }
                         });
                       }
                     },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Durasi layanan harus dipilih';
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _startDate == null
+                              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                              : Theme.of(context).colorScheme.primary,
+                          width: _startDate == null ? 1 : 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Mulai',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _startDate == null
+                                      ? 'Pilih tanggal mulai'
+                                      : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline
+                                        : Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // End Date Field
+                  InkWell(
+                    onTap: _startDate == null ? null : () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate ?? _startDate!,
+                        firstDate: _startDate!,
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // 2 years from now
+                      );
+                      if (pickedDate != null) {
+                        setState(() {
+                          _endDate = pickedDate;
+                        });
                       }
-                      return null;
                     },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _startDate == null
+                            ? Theme.of(context).colorScheme.surface.withOpacity(0.5)
+                            : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _startDate == null
+                              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+                              : (_endDate == null
+                                  ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                                  : Theme.of(context).colorScheme.primary),
+                          width: _startDate == null ? 1 : (_endDate == null ? 1 : 2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: _startDate == null
+                                ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Berakhir',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                        : Theme.of(context).colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _endDate == null
+                                      ? 'Pilih tanggal berakhir'
+                                      : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                        : (_endDate == null
+                                            ? Theme.of(context).colorScheme.outline
+                                            : Theme.of(context).colorScheme.onSurface),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_startDate != null)
+                            Icon(
+                              Icons.arrow_drop_down_rounded,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -741,7 +840,8 @@ class _AddServiceScreenState extends State<AddServiceScreen>
       final placeholderService = Service(
         name: 'Kategori: $category', // Placeholder name
         price: 0.0, // Zero price for placeholder
-        durationPeriod: '1 minggu', // Default duration period for placeholder
+        startDate: DateTime.now(), // Default start date for placeholder
+        endDate: DateTime.now().add(const Duration(days: 30)), // Default 30 days for placeholder
         category: category,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -767,6 +867,26 @@ class _AddServiceScreenState extends State<AddServiceScreen>
       return;
     }
 
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal mulai harus dipilih'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal berakhir harus dipilih'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -775,7 +895,8 @@ class _AddServiceScreenState extends State<AddServiceScreen>
       final service = Service(
         name: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
-        durationPeriod: _selectedDurationPeriod,
+        startDate: _startDate,
+        endDate: _endDate,
         category: _selectedCategory,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

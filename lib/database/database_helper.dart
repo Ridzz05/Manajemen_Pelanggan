@@ -8,7 +8,7 @@ import '../models/service.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'awb_management.db';
-  static const int _databaseVersion = 3; // Updated version for services table migration // Incremented version for migration
+  static const int _databaseVersion = 5; // Updated version for customer service columns
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -72,6 +72,17 @@ class DatabaseHelper {
         print('Error during services table upgrade: $e');
         // If all else fails, try the safer migration approach
         await _migrateServicesTableSafely(db);
+      }
+    }
+
+    if (oldVersion < 4) {
+      try {
+        // Add start_date and end_date columns to services table
+        await _migrateServicesTableToDates(db);
+      } catch (e) {
+        print('Error during services table date migration: $e');
+        // If all else fails, try the safer migration approach
+        await _migrateServicesTableToDatesSafely(db);
       }
     }
   }
@@ -203,7 +214,8 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         price REAL NOT NULL,
-        duration_period TEXT NOT NULL DEFAULT '1 minggu',
+        start_date TEXT,
+        end_date TEXT,
         category TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -352,6 +364,20 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) => Service.fromMap(maps[i]));
   }
 
+  // Get only active services (services that are currently active based on dates)
+  Future<List<Service>> getActiveServices() async {
+    final db = await database;
+    final now = DateTime.now().toIso8601String();
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'services',
+      where: 'start_date <= ? AND (end_date IS NULL OR end_date >= ?)',
+      whereArgs: [now, now],
+      orderBy: 'created_at DESC',
+    );
+    return List.generate(maps.length, (i) => Service.fromMap(maps[i]));
+  }
+
   Future<Service?> getService(int id) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -489,6 +515,77 @@ class DatabaseHelper {
     }
   }
 
+  Future _migrateServicesTableToDatesSafely(Database db) async {
+    try {
+      // First, let's check if the new columns already exist
+      final result = await db.rawQuery("PRAGMA table_info(services)");
+      final columns = result.map((row) => row['name'] as String).toList();
+
+      // Add start_date column if it doesn't exist
+      if (!columns.contains('start_date')) {
+        await db.execute('ALTER TABLE services ADD COLUMN start_date TEXT');
+        print('Added start_date column');
+      }
+
+      // Add end_date column if it doesn't exist
+      if (!columns.contains('end_date')) {
+        await db.execute('ALTER TABLE services ADD COLUMN end_date TEXT');
+        print('Added end_date column');
+      }
+
+      print('Services table date migration completed successfully');
+    } catch (e) {
+      print('Error during safe services table date migration: $e');
+      throw e;
+    }
+  }
+
+  Future _migrateServicesTableToDates(Database db) async {
+    try {
+      print('Migrating services table to dates...');
+
+      // Create temporary table with new structure
+      await db.execute('''
+        CREATE TABLE services_backup (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          price REAL NOT NULL,
+          start_date TEXT,
+          end_date TEXT,
+          category TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        )
+      ''');
+
+      // Copy existing data to backup table
+      await db.execute('''
+        INSERT INTO services_backup (id, name, price, start_date, end_date, category, created_at, updated_at)
+        SELECT
+          id,
+          name,
+          price,
+          NULL as start_date,
+          NULL as end_date,
+          category,
+          created_at,
+          updated_at
+        FROM services
+      ''');
+
+      // Drop old table
+      await db.execute('DROP TABLE services');
+
+      // Rename backup table to services
+      await db.execute('ALTER TABLE services_backup RENAME TO services');
+
+      print('Services table migrated to dates successfully');
+    } catch (e) {
+      print('Error migrating services table to dates: $e');
+      throw e;
+    }
+  }
+
   Future _recreateServicesTable(Database db) async {
     try {
       print('Recreating services table with new schema...');
@@ -499,24 +596,23 @@ class DatabaseHelper {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
           price REAL NOT NULL,
-          duration_period TEXT NOT NULL DEFAULT '1 minggu',
+          start_date TEXT,
+          end_date TEXT,
           category TEXT NOT NULL,
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
       ''');
 
-      // Copy existing data to backup table, converting duration to duration_period
+      // Copy existing data to backup table
       await db.execute('''
-        INSERT INTO services_backup (id, name, price, duration_period, category, created_at, updated_at)
+        INSERT INTO services_backup (id, name, price, start_date, end_date, category, created_at, updated_at)
         SELECT
           id,
           name,
           price,
-          CASE
-            WHEN duration IS NOT NULL THEN CAST(duration AS TEXT) || ' menit'
-            ELSE '1 minggu'
-          END,
+          start_date,
+          end_date,
           category,
           created_at,
           updated_at

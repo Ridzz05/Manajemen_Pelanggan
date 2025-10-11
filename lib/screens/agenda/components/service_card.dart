@@ -68,7 +68,9 @@ class ServiceCard extends StatelessWidget {
                           _CategoryChip(category: service.category),
                           const SizedBox(width: 8),
                           Text(
-                            service.durationPeriod,
+                            service.durationInDays != null
+                                ? '${service.durationInDays} hari'
+                                : 'Tidak ditentukan',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.outline,
                             ),

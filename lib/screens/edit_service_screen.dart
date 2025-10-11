@@ -23,9 +23,10 @@ class _EditServiceScreenState extends State<EditServiceScreen>
   late final TextEditingController _newCategoryController;
 
   String _selectedCategory = 'Website';
-  String _selectedDurationPeriod = '1 minggu';
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   final Set<String> _availableCategories = {'Website', 'Aplikasi', 'Desain'};
-  final List<String> _availableDurationPeriods = ['1 minggu', '2 minggu', '3 minggu', '1 bulan'];
 
   final _formKey = GlobalKey<FormState>();
   final _categoryFormKey = GlobalKey<FormState>();
@@ -39,7 +40,8 @@ class _EditServiceScreenState extends State<EditServiceScreen>
     _nameController = TextEditingController(text: widget.service.name);
     _priceController = TextEditingController(text: widget.service.price.toString());
     _selectedCategory = widget.service.category;
-    _selectedDurationPeriod = widget.service.durationPeriod;
+    _startDate = widget.service.startDate;
+    _endDate = widget.service.endDate;
     _newCategoryController = TextEditingController();
 
     // Initialize animations
@@ -72,8 +74,9 @@ class _EditServiceScreenState extends State<EditServiceScreen>
         .toSet();
 
     // Merge provider categories with local categories only if needed
-    final needsUpdate = !_availableCategories.containsAll(providerCategories) ||
-                       !providerCategories.containsAll(_availableCategories);
+    final needsUpdate =
+        !_availableCategories.containsAll(providerCategories) ||
+        !providerCategories.containsAll(_availableCategories);
 
     if (needsUpdate) {
       setState(() {
@@ -82,7 +85,8 @@ class _EditServiceScreenState extends State<EditServiceScreen>
     }
 
     // Ensure selected category is valid
-    if (!_availableCategories.contains(_selectedCategory) && _availableCategories.isNotEmpty) {
+    if (!_availableCategories.contains(_selectedCategory) &&
+        _availableCategories.isNotEmpty) {
       _selectedCategory = _availableCategories.first;
     }
   }
@@ -309,58 +313,157 @@ class _EditServiceScreenState extends State<EditServiceScreen>
 
                   const SizedBox(height: 16),
 
-                  // Duration Period Field
-                  DropdownButtonFormField<String>(
-                    value: _selectedDurationPeriod,
-                    decoration: InputDecoration(
-                      labelText: 'Durasi Layanan',
-                      hintText: 'Pilih durasi layanan',
-                      prefixIcon: Icon(
-                        Icons.timer_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                    ),
-                    items: _availableDurationPeriods.map((period) {
-                      return DropdownMenuItem(
-                        value: period,
-                        child: Text(period),
+                  // Start Date Field
+                  InkWell(
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate ?? DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // 2 years from now
                       );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
+                      if (pickedDate != null) {
                         setState(() {
-                          _selectedDurationPeriod = value;
+                          _startDate = pickedDate;
+                          // If end date is before start date, clear it
+                          if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+                            _endDate = null;
+                          }
                         });
                       }
                     },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Durasi layanan harus dipilih';
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _startDate == null
+                              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                              : Theme.of(context).colorScheme.primary,
+                          width: _startDate == null ? 1 : 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Mulai',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _startDate == null
+                                      ? 'Pilih tanggal mulai'
+                                      : '${_startDate!.day}/${_startDate!.month}/${_startDate!.year}',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline
+                                        : Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // End Date Field
+                  InkWell(
+                    onTap: _startDate == null ? null : () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate ?? _startDate!,
+                        firstDate: _startDate!,
+                        lastDate: DateTime.now().add(const Duration(days: 365 * 2)), // 2 years from now
+                      );
+                      if (pickedDate != null) {
+                        setState(() {
+                          _endDate = pickedDate;
+                        });
                       }
-                      return null;
                     },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _startDate == null
+                            ? Theme.of(context).colorScheme.surface.withOpacity(0.5)
+                            : Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _startDate == null
+                              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+                              : (_endDate == null
+                                  ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                                  : Theme.of(context).colorScheme.primary),
+                          width: _startDate == null ? 1 : (_endDate == null ? 1 : 2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: _startDate == null
+                                ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                : Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tanggal Berakhir',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                        : Theme.of(context).colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _endDate == null
+                                      ? 'Pilih tanggal berakhir'
+                                      : '${_endDate!.day}/${_endDate!.month}/${_endDate!.year}',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _startDate == null
+                                        ? Theme.of(context).colorScheme.outline.withOpacity(0.5)
+                                        : (_endDate == null
+                                            ? Theme.of(context).colorScheme.outline
+                                            : Theme.of(context).colorScheme.onSurface),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_startDate != null)
+                            Icon(
+                              Icons.arrow_drop_down_rounded,
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
 
                   const SizedBox(height: 16),
@@ -373,18 +476,26 @@ class _EditServiceScreenState extends State<EditServiceScreen>
                         child: Consumer<ServiceProvider>(
                           builder: (context, serviceProvider, child) {
                             // Get categories from provider
-                            final providerCategories = serviceProvider.allCategories.where((cat) => cat != 'Semua').toSet();
+                            final providerCategories = serviceProvider
+                                .allCategories
+                                .where((cat) => cat != 'Semua')
+                                .toSet();
 
                             // Merge with local categories
-                            final allCategories = providerCategories.union(_availableCategories).toList();
+                            final allCategories = providerCategories
+                                .union(_availableCategories)
+                                .toList();
 
                             // Ensure selected category is valid
-                            if (!allCategories.contains(_selectedCategory) && allCategories.isNotEmpty) {
+                            if (!allCategories.contains(_selectedCategory) &&
+                                allCategories.isNotEmpty) {
                               _selectedCategory = allCategories.first;
                             }
 
                             return DropdownButtonFormField<String>(
-                              key: const ValueKey('edit_category_dropdown'), // Add key for better performance
+                              key: const ValueKey(
+                                'edit_category_dropdown',
+                              ), // Add key for better performance
                               value: _selectedCategory,
                               decoration: InputDecoration(
                                 labelText: 'Kategori',
@@ -394,22 +505,30 @@ class _EditServiceScreenState extends State<EditServiceScreen>
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline.withOpacity(0.3),
                                   ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     width: 2,
                                   ),
                                 ),
                                 errorBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.red),
+                                  borderSide: const BorderSide(
+                                    color: Colors.red,
+                                  ),
                                 ),
                                 filled: true,
-                                fillColor: Theme.of(context).colorScheme.surface,
+                                fillColor: Theme.of(
+                                  context,
+                                ).colorScheme.surface,
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 16,
                                   vertical: 16,
@@ -417,7 +536,9 @@ class _EditServiceScreenState extends State<EditServiceScreen>
                               ),
                               items: allCategories.map((category) {
                                 return DropdownMenuItem(
-                                  key: ValueKey('edit_category_$category'), // Add key for each item
+                                  key: ValueKey(
+                                    'edit_category_$category',
+                                  ), // Add key for each item
                                   value: category,
                                   child: Row(
                                     children: [
@@ -463,7 +584,9 @@ class _EditServiceScreenState extends State<EditServiceScreen>
                           ),
                           tooltip: 'Tambah Kategori Baru',
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -624,18 +747,21 @@ class _EditServiceScreenState extends State<EditServiceScreen>
 
   Future<void> _createPlaceholderServiceForCategory(String category) async {
     try {
-      // Create a minimal service entry just for the category
+      // Create a placeholder service entry for the new category
       final placeholderService = Service(
         name: 'Kategori: $category', // Placeholder name
         price: 0.0, // Zero price for placeholder
-        durationPeriod: '1 minggu', // Default duration period for placeholder
+        startDate: DateTime.now(), // Default start date for placeholder
+        endDate: DateTime.now().add(const Duration(days: 30)), // Default 30 days for placeholder
         category: category,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       // Add to database via provider
-      final success = await context.read<ServiceProvider>().addService(placeholderService);
+      final success = await context.read<ServiceProvider>().addService(
+        placeholderService,
+      );
 
       if (success) {
         print('Placeholder service created for category: $category');
@@ -654,6 +780,26 @@ class _EditServiceScreenState extends State<EditServiceScreen>
       return;
     }
 
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal mulai harus dipilih'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tanggal berakhir harus dipilih'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -663,7 +809,8 @@ class _EditServiceScreenState extends State<EditServiceScreen>
       final updatedService = widget.service.copyWith(
         name: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
-        durationPeriod: _selectedDurationPeriod,
+        startDate: _startDate,
+        endDate: _endDate,
         category: _selectedCategory,
         updatedAt: DateTime.now(),
       );

@@ -3,7 +3,8 @@ class Service {
   final String name;
   // description field removed as requested
   final double price;
-  final String durationPeriod; // Changed from int duration to String durationPeriod (1 minggu, 2 minggu, 1 bulan)
+  final DateTime? startDate; // Start date of service period
+  final DateTime? endDate;   // End date of service period
   final String category;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -12,7 +13,8 @@ class Service {
     this.id,
     required this.name,
     required this.price,
-    required this.durationPeriod,
+    this.startDate,
+    this.endDate,
     required this.category,
     required this.createdAt,
     required this.updatedAt,
@@ -23,7 +25,8 @@ class Service {
       'id': id,
       'name': name,
       'price': price,
-      'duration_period': durationPeriod,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
       'category': category,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -35,7 +38,8 @@ class Service {
       id: map['id'],
       name: map['name'],
       price: map['price'],
-      durationPeriod: map['duration_period'] ?? map['duration']?.toString() ?? '1 minggu', // Backward compatibility
+      startDate: map['start_date'] != null ? DateTime.parse(map['start_date']) : null,
+      endDate: map['end_date'] != null ? DateTime.parse(map['end_date']) : null,
       category: map['category'],
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
@@ -46,7 +50,8 @@ class Service {
     int? id,
     String? name,
     double? price,
-    String? durationPeriod,
+    DateTime? startDate,
+    DateTime? endDate,
     String? category,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -55,10 +60,24 @@ class Service {
       id: id ?? this.id,
       name: name ?? this.name,
       price: price ?? this.price,
-      durationPeriod: durationPeriod ?? this.durationPeriod,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  // Helper method to check if service is currently active
+  bool get isActive {
+    final now = DateTime.now();
+    if (startDate == null || endDate == null) return false;
+    return now.isAfter(startDate!) && now.isBefore(endDate!);
+  }
+
+  // Helper method to get duration in days
+  int? get durationInDays {
+    if (startDate == null || endDate == null) return null;
+    return endDate!.difference(startDate!).inDays;
   }
 }
