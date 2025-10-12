@@ -207,7 +207,7 @@ class AppTheme {
         hintStyle: GoogleFonts.poppins(
           fontSize: 14,
           fontWeight: FontWeight.normal,
-          color: textSecondary.withOpacity(0.6),
+          color: textSecondary.withValues(alpha: 0.6),
         ),
       ),
     );

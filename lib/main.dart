@@ -7,16 +7,19 @@ import 'package:proyek_mahasiswa/providers/statistics_provider.dart';
 import 'package:proyek_mahasiswa/providers/customer_provider.dart';
 import 'package:proyek_mahasiswa/providers/service_provider.dart';
 import 'package:proyek_mahasiswa/providers/profile_provider.dart';
+import 'package:proyek_mahasiswa/constants/app_config.dart';
 
 void main() {
   // Initialize sqflite for desktop platforms
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(const MyApp());
+  runApp(MyApp(isProduction: AppConfig.isProduction));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isProduction;
+
+  const MyApp({super.key, this.isProduction = false});
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +31,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => ProfileProvider()),
       ],
       child: MaterialApp(
-        title: 'CRM',
-        debugShowCheckedModeBanner: false,
+        title: 'Manajemen Pelanggan',
+        debugShowCheckedModeBanner: !isProduction, // Hide debug banner in production
         theme: AppTheme.lightTheme,
         home: const MainScreen(),
       ),

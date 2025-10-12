@@ -574,6 +574,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   name: nameController.text,
                   contactMethod: selectedContactMethod,
                   contactValue: contactValueController.text,
+                  phone: contactValueController.text, // Also set phone for compatibility
                   address: '',
                   updatedAt: DateTime.now(),
                 );

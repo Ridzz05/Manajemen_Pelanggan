@@ -283,6 +283,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                       const SizedBox(height: 16),
                       // Contact Value Input
                       TextFormField(
+                        controller: _contactValueController,
                         decoration: InputDecoration(
                           labelText: _getContactValueLabel(_selectedContactMethod),
                           hintText: _getContactValueHint(_selectedContactMethod),
@@ -335,13 +336,13 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                   // Service Selection Field
                   Consumer<ServiceProvider>(
                     builder: (context, serviceProvider, child) {
-                      final services = serviceProvider.activeServices; // Changed to activeServices
+                      final services = serviceProvider.services; // Show all services, not just active ones
 
                       return DropdownButtonFormField<int>(
                         value: _selectedServiceId,
                         decoration: InputDecoration(
                           labelText: 'Layanan yang Dipesan',
-                          hintText: 'Pilih layanan yang sedang berjalan',
+                          hintText: 'Pilih layanan untuk pelanggan ini',
                           prefixIcon: Icon(
                             Icons.business_rounded,
                             color: Theme.of(context).colorScheme.primary,
@@ -372,7 +373,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                         items: [
                           const DropdownMenuItem(
                             value: null,
-                            child: Text('Tidak ada layanan aktif'),
+                            child: Text('Tidak ada layanan tersedia'),
                           ),
                           ...services.map((service) {
                             final duration = service.durationInDays != null
@@ -461,6 +462,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
         name: _nameController.text.trim(),
         contactMethod: _selectedContactMethod,
         contactValue: _contactValueController.text.trim(),
+        phone: _contactValueController.text.trim(), // Also set phone for compatibility
         address: '', // Address field removed, set to empty string
         selectedServiceId: _selectedServiceId,
         selectedServiceName: _selectedServiceName,

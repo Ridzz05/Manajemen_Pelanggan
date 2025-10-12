@@ -45,14 +45,18 @@ class _MainScreenState extends State<MainScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.shadow.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
                     ],
                   ),
                   child: FutureBuilder<bool>(
-                    future: hasPhoto ? ImageStorage.profileImageExists(profile!.businessLogo) : Future.value(false),
+                    future: hasPhoto
+                        ? ImageStorage.profileImageExists(profile!.businessLogo)
+                        : Future.value(false),
                     builder: (context, snapshot) {
                       if (snapshot.data == true) {
                         return ClipRRect(
@@ -102,7 +106,9 @@ class _MainScreenState extends State<MainScreen> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.shadow.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -111,7 +117,10 @@ class _MainScreenState extends State<MainScreen> {
         child: SafeArea(
           child: Container(
             height: 68, // Further reduced height for mobile
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6), // Minimal padding
+            padding: const EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 6,
+            ), // Minimal padding
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -183,7 +192,10 @@ class _MainScreenState extends State<MainScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4), // Even smaller padding
+        padding: const EdgeInsets.symmetric(
+          horizontal: 6,
+          vertical: 4,
+        ), // Even smaller padding
         decoration: BoxDecoration(
           color: isSelected
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
@@ -237,7 +249,9 @@ class _MainScreenState extends State<MainScreen> {
           borderRadius: BorderRadius.circular(17), // Proportional radius
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.25),
+              color: Theme.of(
+                context,
+              ).colorScheme.shadow.withValues(alpha: 0.25),
               blurRadius: 3, // Minimal blur for mobile
               offset: const Offset(0, 1),
             ),
@@ -266,16 +280,18 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               Text(
                 'Tambah Baru',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -300,19 +316,22 @@ class _MainScreenState extends State<MainScreen> {
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           const AddCustomerScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.0, 1.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeOut;
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, 1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOut;
 
-                        var tween = Tween(begin: begin, end: end)
-                            .chain(CurveTween(curve: curve));
+                            var tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
 
-                        return SlideTransition(
-                          position: animation.drive(tween),
-                          child: child,
-                        );
-                      },
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
                     ),
                   );
                 },
@@ -322,7 +341,9 @@ class _MainScreenState extends State<MainScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -347,19 +368,22 @@ class _MainScreenState extends State<MainScreen> {
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           const AddServiceScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.0, 1.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeOut;
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, 1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOut;
 
-                        var tween = Tween(begin: begin, end: end)
-                            .chain(CurveTween(curve: curve));
+                            var tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
 
-                        return SlideTransition(
-                          position: animation.drive(tween),
-                          child: child,
-                        );
-                      },
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
                     ),
                   );
                 },

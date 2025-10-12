@@ -30,11 +30,24 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            // You need to specify values for keyAlias, keyPassword, storeFile, storePassword
+            // These should be configured for your production release
+            keyAlias = "key0"
+            keyPassword = "password123" // Use a secure password in production
+            storeFile = file("../key.jks")
+            storePassword = "password123" // Use a secure password in production
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use the release signing config for production builds
+            signingConfig = signingConfigs.getByName("release")
+            // Enable minification and optimization for production
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

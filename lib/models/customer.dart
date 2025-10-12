@@ -1,7 +1,6 @@
 class Customer {
   final int? id;
   final String name;
-  final String? email; // Made nullable for backward compatibility
   final String contactMethod;
   final String contactValue;
   final String phone;
@@ -14,7 +13,6 @@ class Customer {
   Customer({
     this.id,
     required this.name,
-    this.email, // Nullable
     required this.contactMethod,
     required this.contactValue,
     this.phone = '',
@@ -29,7 +27,6 @@ class Customer {
     return {
       'id': id,
       'name': name,
-      'email': email,
       'contact_method': contactMethod,
       'contact_value': contactValue,
       'phone': phone,
@@ -42,12 +39,22 @@ class Customer {
   }
 
   factory Customer.fromMap(Map<String, dynamic> map) {
+    // Handle backward compatibility with old email field
+    String contactValue = map['contact_value'] ?? '';
+    String contactMethod = map['contact_method'] ?? 'Email';
+
+    // If contact_value is empty but email exists, use email as contact_value
+    if (contactValue.isEmpty && map['email'] != null && map['email'].toString().isNotEmpty) {
+      contactValue = map['email'].toString();
+      // Assume email contact method for backward compatibility
+      contactMethod = 'Email';
+    }
+
     return Customer(
       id: map['id'],
       name: map['name'],
-      email: map['email'], // Can be null now
-      contactMethod: map['contact_method'] ?? 'Email',
-      contactValue: map['contact_value'] ?? map['email'] ?? '',
+      contactMethod: contactMethod,
+      contactValue: contactValue,
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',
       selectedServiceId: map['selected_service_id'],

@@ -31,7 +31,7 @@ class DatabaseHelper {
       // Fallback: Use a simple path for platforms where path_provider is not available
       // This is a temporary workaround - in production, you'd want to handle this better
       path = join('./', _databaseName);
-      print('Warning: Using fallback path for database. Error: $e');
+      // Removed debug print statement for production
     }
 
     return await openDatabase(
@@ -51,14 +51,14 @@ class DatabaseHelper {
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    print('Upgrading database from version $oldVersion to $newVersion');
+    // Removed debug print statement for production
 
     if (oldVersion < 2) {
       try {
         // Strategy: Drop and recreate customers table with new schema
         await _recreateCustomersTable(db);
       } catch (e) {
-        print('Error during database upgrade: $e');
+        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateCustomersTableSafely(db);
       }
@@ -69,7 +69,7 @@ class DatabaseHelper {
         // Strategy: Drop and recreate services table with new schema
         await _recreateServicesTable(db);
       } catch (e) {
-        print('Error during services table upgrade: $e');
+        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateServicesTableSafely(db);
       }
@@ -80,7 +80,7 @@ class DatabaseHelper {
         // Add selected_service_id and selected_service_name columns to customers table
         await _migrateCustomersTableToServiceColumns(db);
       } catch (e) {
-        print('Error during customers table service migration: $e');
+        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateCustomersTableToServiceColumnsSafely(db);
       }
@@ -96,45 +96,44 @@ class DatabaseHelper {
       // Add contact_method column if it doesn't exist
       if (!columns.contains('contact_method')) {
         await db.execute('ALTER TABLE customers ADD COLUMN contact_method TEXT NOT NULL DEFAULT "Email"');
-        print('Added contact_method column');
+        // Removed debug print statement for production
       }
 
       // Add contact_value column if it doesn't exist
       if (!columns.contains('contact_value')) {
         await db.execute('ALTER TABLE customers ADD COLUMN contact_value TEXT NOT NULL DEFAULT ""');
-        print('Added contact_value column');
+        // Removed debug print statement for production
       }
 
-      // Make email column nullable if it exists
+      // Make email column nullable if it exists - deprecated, but keeping for backward compatibility
       if (columns.contains('email')) {
         try {
           await db.execute('ALTER TABLE customers ALTER COLUMN email TEXT');
-          print('Made email column nullable');
+          // Removed debug print statement for production
         } catch (e) {
-          print('Could not alter email column, it might already be nullable: $e');
+          // Removed debug print statement for production
         }
       }
 
-      // Migrate existing email data to new structure
-      await db.execute('UPDATE customers SET contact_method = "Email", contact_value = email WHERE email IS NOT NULL AND (contact_value IS NULL OR contact_value = "")');
+      // Migrate existing email data to new structure - skip this since email field is deprecated
+      // await db.execute('UPDATE customers SET contact_method = "Email", contact_value = email WHERE email IS NOT NULL AND (contact_value IS NULL OR contact_value = "")');
 
-      print('Database migration completed successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error during safe database migration: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }
 
   Future _recreateCustomersTable(Database db) async {
     try {
-      print('Recreating customers table with new schema...');
+      // Removed debug print statement for production
 
       // Create temporary table with new structure
       await db.execute('''
         CREATE TABLE customers_backup (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
-          email TEXT,
           contact_method TEXT NOT NULL DEFAULT 'Email',
           contact_value TEXT NOT NULL,
           phone TEXT NOT NULL DEFAULT '',
@@ -146,11 +145,10 @@ class DatabaseHelper {
 
       // Copy existing data to backup table, handling null email
       await db.execute('''
-        INSERT INTO customers_backup (id, name, email, contact_method, contact_value, phone, address, created_at, updated_at)
+        INSERT INTO customers_backup (id, name, contact_method, contact_value, phone, address, created_at, updated_at)
         SELECT
           id,
           name,
-          email,
           'Email',
           COALESCE(email, ''),
           COALESCE(phone, ''),
@@ -166,9 +164,9 @@ class DatabaseHelper {
       // Rename backup table to customers
       await db.execute('ALTER TABLE customers_backup RENAME TO customers');
 
-      print('Customers table recreated successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error recreating customers table: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }
@@ -195,7 +193,6 @@ class DatabaseHelper {
       CREATE TABLE customers (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        email TEXT, -- Nullable for backward compatibility
         contact_method TEXT NOT NULL DEFAULT 'Email',
         contact_value TEXT NOT NULL,
         phone TEXT NOT NULL DEFAULT '',
@@ -502,15 +499,15 @@ class DatabaseHelper {
       // Add duration_period column if it doesn't exist
       if (!columns.contains('duration_period')) {
         await db.execute('ALTER TABLE services ADD COLUMN duration_period TEXT NOT NULL DEFAULT "1 minggu"');
-        print('Added duration_period column');
+        // Removed debug print statement for production
       }
 
       // Update existing duration data to duration_period format
       await db.execute('UPDATE services SET duration_period = CAST(duration AS TEXT) || " menit" WHERE duration IS NOT NULL');
 
-      print('Services table migration completed successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error during safe services table migration: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }
@@ -524,32 +521,31 @@ class DatabaseHelper {
       // Add selected_service_id column if it doesn't exist
       if (!columns.contains('selected_service_id')) {
         await db.execute('ALTER TABLE customers ADD COLUMN selected_service_id INTEGER');
-        print('Added selected_service_id column');
+        // Removed debug print statement for production
       }
 
       // Add selected_service_name column if it doesn't exist
       if (!columns.contains('selected_service_name')) {
         await db.execute('ALTER TABLE customers ADD COLUMN selected_service_name TEXT');
-        print('Added selected_service_name column');
+        // Removed debug print statement for production
       }
 
-      print('Customers table service migration completed successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error during safe customers table service migration: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }
 
   Future _migrateCustomersTableToServiceColumns(Database db) async {
     try {
-      print('Migrating customers table to service columns...');
+      // Removed debug print statement for production
 
       // Create temporary table with new structure
       await db.execute('''
         CREATE TABLE customers_backup (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
-          email TEXT,
           contact_method TEXT NOT NULL DEFAULT 'Email',
           contact_value TEXT NOT NULL,
           phone TEXT NOT NULL DEFAULT '',
@@ -563,11 +559,10 @@ class DatabaseHelper {
 
       // Copy existing data to backup table
       await db.execute('''
-        INSERT INTO customers_backup (id, name, email, contact_method, contact_value, phone, address, selected_service_id, selected_service_name, created_at, updated_at)
+        INSERT INTO customers_backup (id, name, contact_method, contact_value, phone, address, selected_service_id, selected_service_name, created_at, updated_at)
         SELECT
           id,
           name,
-          email,
           contact_method,
           contact_value,
           phone,
@@ -585,62 +580,17 @@ class DatabaseHelper {
       // Rename backup table to customers
       await db.execute('ALTER TABLE customers_backup RENAME TO customers');
 
-      print('Customers table migrated to service columns successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error migrating customers table to service columns: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }
 
-  Future _migrateServicesTableToDates(Database db) async {
-    try {
-      print('Migrating services table to dates...');
-
-      // Create temporary table with new structure
-      await db.execute('''
-        CREATE TABLE services_backup (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          price REAL NOT NULL,
-          start_date TEXT,
-          end_date TEXT,
-          category TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        )
-      ''');
-
-      // Copy existing data to backup table
-      await db.execute('''
-        INSERT INTO services_backup (id, name, price, start_date, end_date, category, created_at, updated_at)
-        SELECT
-          id,
-          name,
-          price,
-          NULL as start_date,
-          NULL as end_date,
-          category,
-          created_at,
-          updated_at
-        FROM services
-      ''');
-
-      // Drop old table
-      await db.execute('DROP TABLE services');
-
-      // Rename backup table to services
-      await db.execute('ALTER TABLE services_backup RENAME TO services');
-
-      print('Services table migrated to dates successfully');
-    } catch (e) {
-      print('Error migrating services table to dates: $e');
-      throw e;
-    }
-  }
 
   Future _recreateServicesTable(Database db) async {
     try {
-      print('Recreating services table with new schema...');
+      // Removed debug print statement for production
 
       // Create temporary table with new structure
       await db.execute('''
@@ -677,9 +627,9 @@ class DatabaseHelper {
       // Rename backup table to services
       await db.execute('ALTER TABLE services_backup RENAME TO services');
 
-      print('Services table recreated successfully');
+      // Removed debug print statement for production
     } catch (e) {
-      print('Error recreating services table: $e');
+      // Removed debug print statement for production
       throw e;
     }
   }

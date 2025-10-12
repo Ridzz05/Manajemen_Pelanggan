@@ -22,7 +22,7 @@ class CustomerProvider extends ChangeNotifier {
       _customers = await dbHelper.getAllCustomers();
       _filteredCustomers = _customers;
     } catch (e) {
-      print('Error loading customers: $e');
+      // Removed debug print statement for production
       _customers = [];
       _filteredCustomers = [];
     } finally {
@@ -38,7 +38,6 @@ class CustomerProvider extends ChangeNotifier {
     } else {
       _filteredCustomers = _customers.where((customer) {
         return customer.name.toLowerCase().contains(query.toLowerCase()) ||
-               (customer.email?.toLowerCase().contains(query.toLowerCase()) ?? false) ||
                customer.phone.contains(query) ||
                customer.contactValue.toLowerCase().contains(query.toLowerCase());
       }).toList();
@@ -56,7 +55,7 @@ class CustomerProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error adding customer: $e');
+      // Removed debug print statement for production
       return false;
     }
   }
@@ -71,7 +70,7 @@ class CustomerProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error updating customer: $e');
+      // Removed debug print statement for production
       return false;
     }
   }
@@ -86,7 +85,7 @@ class CustomerProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('Error deleting customer: $e');
+      // Removed debug print statement for production
       return false;
     }
   }
