@@ -3,12 +3,12 @@ import 'package:provider/provider.dart';
 import '../providers/profile_provider.dart';
 import '../utils/image_storage.dart';
 import 'dart:io';
-import 'package:proyek_mahasiswa/screens/home_screen.dart';
-import 'package:proyek_mahasiswa/screens/explore_screen.dart';
-import 'package:proyek_mahasiswa/screens/agenda_screen.dart';
-import 'package:proyek_mahasiswa/screens/profile_screen.dart';
-import 'package:proyek_mahasiswa/screens/add_customer_screen.dart';
-import 'package:proyek_mahasiswa/screens/add_service_screen.dart';
+import '/screens/home_screen.dart';
+import '/screens/explore_screen.dart';
+import '/screens/agenda_screen.dart';
+import '/screens/profile_screen.dart';
+import '/screens/add_customer_screen.dart';
+import '/screens/add_service_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

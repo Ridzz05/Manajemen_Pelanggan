@@ -26,240 +26,380 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 720;
+            final contentWidth = constraints.maxWidth - 32; // subtract horizontal padding
+
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.primaryContainer.withOpacity(0.12),
+                    colorScheme.surface,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(theme),
+                          const SizedBox(height: 16),
+                          Consumer<ProfileProvider>(
+                            builder: (context, profileProvider, child) {
+                              if (profileProvider.isLoading) {
+                                return Container(
+                                  height: isWide ? 190 : 170,
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(),
+                                );
+                              }
+
+                              final profile = profileProvider.profile;
+
+                              return AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
+                                child: _buildSimplifiedProfileCard(
+                                  context,
+                                  profile,
+                                  isWide,
+                                  key: ValueKey(profile?.businessLogo ?? profile?.businessName ?? 'profile'),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Aksi Cepat',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    sliver: SliverToBoxAdapter(
+                      child: _buildQuickActions(context, isWide, contentWidth),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            Icons.verified_user_rounded,
+            color: theme.colorScheme.primary,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.only(bottom: 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Profil Bisnis',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Kelola informasi bisnis Anda',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Simplified Business Profile Section
-              Consumer<ProfileProvider>(
-                builder: (context, profileProvider, child) {
-                  if (profileProvider.isLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  final profile = profileProvider.profile;
-
-                  return _buildSimplifiedProfileCard(context, profile);
-                },
-              ),
-
-              const SizedBox(height: 32),
-
-              // Quick Actions
               Text(
-                'Aksi Cepat',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+                'Profil Bisnis',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Quick Action Buttons
-              Expanded(
-                child: ListView(
-                  children: [
-                    _buildQuickActionTile(
-                      context,
-                      Icons.edit_rounded,
-                      'Edit Profil',
-                      'Ubah informasi bisnis',
-                      () => _showEditBusinessDialog(context),
-                    ),
-                    _buildQuickActionTile(
-                      context,
-                      Icons.analytics_rounded,
-                      'Statistik',
-                      'Lihat ringkasan bisnis',
-                      () => _showStatisticsDialog(context),
-                    ),
-                    _buildQuickActionTile(
-                      context,
-                      Icons.settings_rounded,
-                      'Pengaturan',
-                      'Konfigurasi aplikasi',
-                      () => _showSettingsDialog(context),
-                    ),
-                    _buildQuickActionTile(
-                      context,
-                      Icons.info_rounded,
-                      'Tentang',
-                      'Informasi aplikasi',
-                      () => _showAboutDialog(context),
-                    ),
-                  ],
+              const SizedBox(height: 6),
+              Text(
+                'Kelola informasi bisnis Anda',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildSimplifiedProfileCard(BuildContext context, profile) {
+  Widget _buildSimplifiedProfileCard(BuildContext context, profile, bool isWide, {Key? key}) {
     final hasPhoto = profile?.businessLogo.isNotEmpty ?? false;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return GestureDetector(
       onTap: () => _showPhotoOptions(context),
-      child: Container(
-        padding: const EdgeInsets.all(20),
+      child: AnimatedContainer(
+        key: key,
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.all(isWide ? 24 : 20),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surface,
+              colorScheme.primaryContainer.withOpacity(0.15),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.08)),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: colorScheme.shadow.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Logo
-            Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.withAlpha(50),
-                  width: 2,
-                ),
-              ),
-              child: FutureBuilder<bool>(
-                future: hasPhoto ? ImageStorage.profileImageExists(profile!.businessLogo) : Future.value(false),
-                builder: (context, snapshot) {
-                  if (snapshot.data == true) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(13),
-                      child: Image.file(
-                        File(profile!.businessLogo),
-                        fit: BoxFit.cover,
-                        width: 60,
-                        height: 60,
-                      ),
-                    );
-                  } else {
-                    return Icon(
-                      Icons.business_rounded,
-                      size: 24,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    );
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Business Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile?.businessName ?? 'AWB Auto Workshop',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: isWide ? 76 : 68,
+                  width: isWide ? 76 : 68,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: colorScheme.primary.withOpacity(0.2),
+                      width: 2,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    profile?.businessDescription ?? 'Bengkel Mobil Terpercaya',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+                  child: FutureBuilder<bool>(
+                    future: hasPhoto ? ImageStorage.profileImageExists(profile!.businessLogo) : Future.value(false),
+                    builder: (context, snapshot) {
+                      if (snapshot.data == true) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            File(profile!.businessLogo),
+                            fit: BoxFit.cover,
+                            width: isWide ? 76 : 68,
+                            height: isWide ? 76 : 68,
+                          ),
+                        );
+                      } else {
+                        return Icon(
+                          Icons.business_rounded,
+                          size: 28,
+                          color: colorScheme.onPrimaryContainer,
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile?.businessName ?? 'AWB Auto Workshop',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        profile?.businessDescription ?? 'Bengkel Mobil Terpercaya',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _showEditBusinessDialog(context),
+                  icon: Icon(
+                    Icons.edit_rounded,
+                    color: colorScheme.primary,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: colorScheme.outline.withOpacity(0.12)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.photo_camera_back_rounded,
+                    size: 18,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      hasPhoto ? 'Ketuk untuk perbarui logo bisnis' : 'Tambahkan logo agar profil lebih profesional',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Icon(
+                    Icons.touch_app_rounded,
+                    size: 18,
+                    color: colorScheme.outline,
                   ),
                 ],
               ),
             ),
-
-            // Edit Icon
-            IconButton(
-              onPressed: () => _showEditBusinessDialog(context),
-              icon: Icon(
-                Icons.edit_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildQuickActions(BuildContext context, bool isWide, double contentWidth) {
+    final tiles = [
+      _buildQuickActionTile(
+        context,
+        Icons.edit_rounded,
+        'Edit Profil',
+        'Ubah informasi bisnis',
+        () => _showEditBusinessDialog(context),
+      ),
+      _buildQuickActionTile(
+        context,
+        Icons.analytics_rounded,
+        'Statistik',
+        'Lihat ringkasan bisnis',
+        () => _showStatisticsDialog(context),
+      ),
+      _buildQuickActionTile(
+        context,
+        Icons.settings_rounded,
+        'Pengaturan',
+        'Konfigurasi aplikasi',
+        () => _showSettingsDialog(context),
+      ),
+      _buildQuickActionTile(
+        context,
+        Icons.info_rounded,
+        'Tentang',
+        'Informasi aplikasi',
+        () => _showAboutDialog(context),
+      ),
+    ];
+
+    if (!isWide) {
+      return Column(
+        children: [
+          for (int i = 0; i < tiles.length; i++) ...[
+            tiles[i],
+            if (i != tiles.length - 1) const SizedBox(height: 10),
+          ],
+        ],
+      );
+    }
+
+    final tileWidth = (contentWidth - 12) / 2;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: tiles
+          .map(
+            (tile) => SizedBox(
+              width: tileWidth,
+              child: tile,
+            ),
+          )
+          .toList(),
+    );
+  }
+
   Widget _buildQuickActionTile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.03),
-            blurRadius: 2,
-            offset: const Offset(0, 1),
+            color: colorScheme.shadow.withOpacity(0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+        ),
       ),
       child: ListTile(
         onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: Theme.of(context).colorScheme.primary,
+            color: colorScheme.primary,
             size: 20,
           ),
         ),
         title: Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
         subtitle: Text(
           subtitle,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.outline,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
         trailing: Icon(
           Icons.chevron_right_rounded,
-          color: Theme.of(context).colorScheme.outline,
+          color: colorScheme.outline,
         ),
       ),
     );

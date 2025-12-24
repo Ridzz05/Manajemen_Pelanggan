@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:proyek_mahasiswa/models/product_model.dart';
-import 'package:proyek_mahasiswa/constants/app_constants.dart';
+import '/models/product_model.dart';
+import '/constants/app_constants.dart';
 
 class ProductCard extends StatelessWidget {
   const ProductCard({

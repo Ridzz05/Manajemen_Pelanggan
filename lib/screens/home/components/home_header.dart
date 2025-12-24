@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:proyek_mahasiswa/screens/shared/widgets/screen_header.dart';
+import '/screens/shared/widgets/screen_header.dart';
 
 /// Header component for home screen
 class HomeHeader extends StatelessWidget {

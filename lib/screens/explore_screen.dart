@@ -29,99 +29,186 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 720;
+
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.primaryContainer.withOpacity(0.1),
+                    colorScheme.surface,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeader(theme),
+                          const SizedBox(height: 12),
+                          _buildSearchBar(context, isWide),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Consumer<CustomerProvider>(
+                    builder: (context, customerProvider, child) {
+                      if (customerProvider.isLoading) {
+                        return const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+
+                      if (customerProvider.filteredCustomers.isEmpty) {
+                        return SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                            child: _buildEmptyState(),
+                          ),
+                        );
+                      }
+
+                      return SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final customer = customerProvider.filteredCustomers[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildCustomerCard(customer, isWide),
+                              );
+                            },
+                            childCount: customerProvider.filteredCustomers.length,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            Icons.people_alt_rounded,
+            color: theme.colorScheme.primary,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Daftar Pelanggan',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Kelola semua data pelanggan Anda',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+              Text(
+                'Daftar Pelanggan',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
                 ),
               ),
-
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    context.read<CustomerProvider>().searchCustomers(value);
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Cari pelanggan...',
-                    prefixIcon: Icon(
-                      Icons.search_rounded,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.clear_rounded,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              context.read<CustomerProvider>().searchCustomers('');
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: Consumer<CustomerProvider>(
-                  builder: (context, customerProvider, child) {
-                    if (customerProvider.isLoading) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    }
-
-                    if (customerProvider.filteredCustomers.isEmpty) {
-                      return _buildEmptyState();
-                    }
-
-                    return ListView.builder(
-                      itemCount: customerProvider.filteredCustomers.length,
-                      itemBuilder: (context, index) {
-                        final customer = customerProvider.filteredCustomers[index];
-                        return _buildCustomerCard(customer);
-                      },
-                    );
-                  },
+              const SizedBox(height: 6),
+              Text(
+                'Kelola semua data pelanggan Anda',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context, bool isWide) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final verticalPadding = isWide ? 10.0 : 8.0;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: verticalPadding),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.search_rounded,
+            color: colorScheme.outline,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {});
+                context.read<CustomerProvider>().searchCustomers(value);
+              },
+              decoration: const InputDecoration(
+                hintText: 'Cari pelanggan...',
+                border: InputBorder.none,
+              ),
+              textInputAction: TextInputAction.search,
+            ),
+          ),
+          if (_searchController.text.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                Icons.clear_rounded,
+                color: colorScheme.outline,
+              ),
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                });
+                context.read<CustomerProvider>().searchCustomers('');
+              },
+              tooltip: 'Bersihkan',
+            ),
+        ],
       ),
     );
   }
@@ -155,137 +242,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _buildCustomerCard(Customer customer) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 24,
-          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-          child: Text(
-            customer.name.substring(0, 1).toUpperCase(),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(
-          customer.name,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _getContactMethodIcon(customer.contactMethod),
-                  size: 16,
-                  color: _getContactMethodColor(customer.contactMethod),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  customer.contactValue,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            if (customer.selectedServiceName != null && customer.selectedServiceName!.isNotEmpty)
-              Row(
-                children: [
-                  Icon(
-                    Icons.business_rounded,
-                    size: 14,
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Layanan: ${customer.selectedServiceName}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: () => _showCustomerDetailDialog(context, customer),
-              icon: Icon(
-                Icons.info_outline_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              tooltip: 'Detail Layanan',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(
-                minWidth: 32,
-                minHeight: 32,
-              ),
-            ),
-            const SizedBox(width: 4),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                switch (value) {
-                  case 'edit':
-                    _showEditCustomerDialog(context, customer);
-                    break;
-                  case 'delete':
-                    _showDeleteConfirmation(context, customer);
-                    break;
-                }
-              },
-              itemBuilder: (BuildContext context) => [
-                const PopupMenuItem<String>(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Edit'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_rounded, size: 20, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Hapus', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+  Widget _buildCustomerCard(Customer customer, bool isWide) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final avatarRadius = isWide ? 26.0 : 24.0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
         onTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -294,6 +259,156 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
           );
         },
+        child: Container(
+          padding: EdgeInsets.all(isWide ? 16 : 14),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: colorScheme.outline.withOpacity(0.1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                child: Text(
+                  customer.name.substring(0, 1).toUpperCase(),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customer.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          _getContactMethodIcon(customer.contactMethod),
+                          size: 16,
+                          color: _getContactMethodColor(customer.contactMethod),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            customer.contactValue,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    if (customer.selectedServiceName != null && customer.selectedServiceName!.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.business_rounded,
+                              size: 14,
+                              color: colorScheme.secondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Layanan: ${customer.selectedServiceName}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  IconButton(
+                    onPressed: () => _showCustomerDetailDialog(context, customer),
+                    icon: Icon(
+                      Icons.info_outline_rounded,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    tooltip: 'Detail Layanan',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'edit':
+                          _showEditCustomerDialog(context, customer);
+                          break;
+                        case 'delete':
+                          _showDeleteConfirmation(context, customer);
+                          break;
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_rounded, size: 20),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Hapus', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

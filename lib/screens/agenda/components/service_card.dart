@@ -16,28 +16,33 @@ class ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       key: ValueKey(service.id), // Add key for better performance
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x1A000000), // Use const color
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material( // Use Material for better ink response
         type: MaterialType.transparency,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -149,15 +154,17 @@ class _CategoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _getCategoryColor(category);
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: _getCategoryColor(category).withOpacity(0.1),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
         _getCategoryIcon(category),
-        color: _getCategoryColor(category),
+        color: color,
         size: 20,
       ),
     );
@@ -201,17 +208,19 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = _getCategoryColor(category);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: _getCategoryColor(category).withOpacity(0.1),
+        color: color.withOpacity(0.14),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         category,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: _getCategoryColor(category),
-          fontWeight: FontWeight.w600,
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

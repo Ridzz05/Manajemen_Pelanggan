@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import '../providers/statistics_provider.dart';
 import '../models/statistics.dart';
+import 'shared/widgets/chart_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,196 +24,264 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return SafeArea(
-      child: ColoredBox(
-        color: Theme.of(context).colorScheme.background,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Section
-              Padding(
-                padding: const EdgeInsets.only(top: 20, bottom: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Dashboard',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Ringkasan bisnis dan statistik pelanggan',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
+      child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 720;
+
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primaryContainer.withOpacity(0.1),
+                  colorScheme.surface,
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
+            ),
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                    child: _buildHeader(theme),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  sliver: Consumer<StatisticsProvider>(
+                    builder: (context, statsProvider, child) {
+                      if (statsProvider.isLoading) {
+                        return SliverToBoxAdapter(
+                          child: Container(
+                            height: isWide ? 260 : 220,
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(),
+                          ),
+                        );
+                      }
 
-              // Statistics Cards
-              Consumer<StatisticsProvider>(
-                builder: (context, statsProvider, child) {
-                  if (statsProvider.isLoading) {
-                    return const Expanded(
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
+                      final stats = statsProvider.statistics;
 
-                  final stats = statsProvider.statistics;
-
-                  return Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Summary Cards
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildSummaryCard(
-                                  context,
-                                  'Total Pelanggan',
-                                  stats.totalCustomers.toString(),
-                                  Icons.people_rounded,
-                                  Colors.blue,
+                      return SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSummaryGrid(
+                              context,
+                              stats,
+                              isWide,
+                            ),
+                            const SizedBox(height: 18),
+                            _buildPopularServiceCard(context, stats),
+                            const SizedBox(height: 20),
+                            ChartContainer(
+                              title: 'Distribusi Layanan',
+                              child: _buildPieChart(context, stats),
+                            ),
+                            const SizedBox(height: 20),
+                            ChartContainer(
+                              title: 'Pertumbuhan Bulanan',
+                              child: _buildBarChart(context, stats),
+                            ),
+                            const SizedBox(height: 22),
+                            Text(
+                              'Aktivitas Terbaru',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            if (stats.recentCustomers.isNotEmpty) ...[
+                              Text(
+                                'Pelanggan Baru',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildSummaryCard(
+                              const SizedBox(height: 10),
+                              ...stats.recentCustomers.take(3).map(
+                                (customer) => _buildRecentActivityCard(
                                   context,
-                                  'Total Layanan',
-                                  stats.totalServices.toString(),
-                                  Icons.business_rounded,
+                                  customer.name,
+                                  'Pelanggan baru ditambahkan',
+                                  Icons.person_add_rounded,
+                                  Colors.blue,
+                                  customer.createdAt,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                            if (stats.recentServices.isNotEmpty) ...[
+                              Text(
+                                'Layanan Baru',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.secondary,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              ...stats.recentServices.take(3).map(
+                                (service) => _buildRecentActivityCard(
+                                  context,
+                                  service.name,
+                                  service.category,
+                                  Icons.add_business_rounded,
                                   Colors.green,
+                                  service.createdAt,
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Most Popular Service Card
-                          _buildPopularServiceCard(context, stats),
-                          const SizedBox(height: 20),
-
-                          // Charts Section
-                          Text(
-                            'Distribusi Layanan',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildPieChart(context, stats),
-                          const SizedBox(height: 24),
-
-                          // Monthly Growth Chart
-                          Text(
-                            'Pertumbuhan Bulanan',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildBarChart(context, stats),
-                          const SizedBox(height: 24),
-
-                          // Recent Activity Section
-                          Text(
-                            'Aktivitas Terbaru',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Recent Customers
-                          if (stats.recentCustomers.isNotEmpty) ...[
-                            Text(
-                              'Pelanggan Baru',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...stats.recentCustomers.take(3).map(
-                              (customer) => _buildRecentActivityCard(
-                                context,
-                                customer.name,
-                                'Pelanggan baru ditambahkan',
-                                Icons.person_add_rounded,
-                                Colors.blue,
-                                customer.createdAt,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
                           ],
-
-                          // Recent Services
-                          if (stats.recentServices.isNotEmpty) ...[
-                            Text(
-                              'Layanan Baru',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ...stats.recentServices.take(3).map(
-                              (service) => _buildRecentActivityCard(
-                                context,
-                                service.name,
-                                service.category,
-                                Icons.add_business_rounded,
-                                Colors.green,
-                                service.createdAt,
-                              ),
-                            ),
-                          ],
-
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(
+            Icons.dashboard_rounded,
+            color: theme.colorScheme.primary,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Dashboard',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Ringkasan bisnis dan statistik pelanggan',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryGrid(
+    BuildContext context,
+    StatisticsData stats,
+    bool isWide,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildSummaryCard(
+            context,
+            'Total Pelanggan',
+            stats.totalCustomers.toString(),
+            Icons.people_rounded,
+            Colors.blue,
+            isWide,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildSummaryCard(
+            context,
+            'Total Layanan',
+            stats.totalServices.toString(),
+            Icons.business_rounded,
+            Colors.green,
+            isWide,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isWide,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: EdgeInsets.all(isWide ? 18 : 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.12),
+            colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             title,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: color.withOpacity(0.8),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -225,13 +294,23 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.2),
+            Theme.of(context).colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.secondary.withOpacity(0.18),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+            color: Theme.of(context).colorScheme.shadow.withOpacity(0.07),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -284,37 +363,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPieChart(BuildContext context, StatisticsData stats) {
     if (stats.serviceDistributionData.isEmpty) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: Text('Tidak ada data untuk ditampilkan'),
-        ),
-      );
+      return const EmptyChartState();
     }
 
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 260,
       child: PieChart(
         PieChartData(
           sections: stats.serviceDistributionData,
           sectionsSpace: 2,
-          centerSpaceRadius: 40,
+          centerSpaceRadius: 42,
         ),
       ),
     );
@@ -322,32 +380,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBarChart(BuildContext context, StatisticsData stats) {
     if (stats.monthlyGrowthData.isEmpty) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: Text('Tidak ada data untuk ditampilkan'),
-        ),
-      );
+      return const EmptyChartState();
     }
 
-    return Container(
-      height: 250,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
+    return SizedBox(
+      height: 260,
       child: BarChart(
         BarChartData(
           barGroups: stats.monthlyGrowthData,
@@ -358,12 +395,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 getTitlesWidget: (value, meta) {
                   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
                   if (value.toInt() >= 0 && value.toInt() < months.length) {
-                    return Text(
-                      months[value.toInt()],
-                      style: Theme.of(context).textTheme.bodySmall,
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        months[value.toInt()],
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                     );
                   }
-                  return const Text('');
+                  return const SizedBox.shrink();
                 },
               ),
             ),
@@ -381,25 +421,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildRecentActivityCard(BuildContext context, String title, String subtitle, IconData icon, Color color, DateTime date) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withOpacity(0.12),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -408,14 +458,15 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -423,8 +474,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             _formatDate(date),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.outline,
             ),
           ),
         ],

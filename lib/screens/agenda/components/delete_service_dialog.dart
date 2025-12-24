@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../providers/service_provider.dart';
 import '../../../models/service.dart';
 
-/// Dialog for confirming service deletion
 class DeleteServiceDialog extends StatelessWidget {
   final Service service;
 
