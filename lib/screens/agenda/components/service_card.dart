@@ -19,43 +19,32 @@ class ServiceCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      key: ValueKey(service.id), // Add key for better performance
+      key: ValueKey(service.id),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
+          color: colorScheme.outlineVariant.withOpacity(0.5),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Material( // Use Material for better ink response
+      child: Material(
         type: MaterialType.transparency,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Leading icon - cached category color/icon
                 _CategoryIcon(category: service.category),
                 const SizedBox(width: 12),
-
-                // Content area
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
                       Text(
                         service.name,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -64,10 +53,7 @@ class ServiceCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-
                       const SizedBox(height: 4),
-
-                      // Category and duration row
                       Row(
                         children: [
                           _CategoryChip(category: service.category),
@@ -85,15 +71,11 @@ class ServiceCard extends StatelessWidget {
                     ],
                   ),
                 ),
-
                 const SizedBox(width: 8),
-
-                // Trailing area
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Price
                     Text(
                       'Rp ${service.price.toStringAsFixed(0)}',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -101,10 +83,7 @@ class ServiceCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
-                    // Popup menu with optimized constraints
                     PopupMenuButton<String>(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(
@@ -146,7 +125,6 @@ class ServiceCard extends StatelessWidget {
   }
 }
 
-// Optimized category widgets for better performance
 class _CategoryIcon extends StatelessWidget {
   final String category;
 
@@ -154,49 +132,30 @@ class _CategoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getCategoryColor(category);
-
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    // Minimalist icon background
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: colorScheme.secondaryContainer.withOpacity(0.4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(
         _getCategoryIcon(category),
-        color: color,
+        color: colorScheme.onSecondaryContainer,
         size: 20,
       ),
     );
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'perawatan':
-        return Colors.green;
-      case 'perbaikan':
-        return Colors.orange;
-      case 'pembersihan':
-        return Colors.blue;
-      case 'modifikasi':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
-  }
-
   IconData _getCategoryIcon(String category) {
     switch (category.toLowerCase()) {
-      case 'perawatan':
-        return Icons.build_rounded;
-      case 'perbaikan':
-        return Icons.handyman_rounded;
-      case 'pembersihan':
-        return Icons.cleaning_services_rounded;
-      case 'modifikasi':
-        return Icons.tune_rounded;
-      default:
-        return Icons.business_rounded;
+      case 'perawatan': return Icons.build_outlined;
+      case 'perbaikan': return Icons.handyman_outlined;
+      case 'pembersihan': return Icons.cleaning_services_outlined;
+      case 'modifikasi': return Icons.tune_outlined;
+      default: return Icons.business_outlined;
     }
   }
 }
@@ -208,36 +167,21 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _getCategoryColor(category);
-
+    final theme = Theme.of(context);
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
+        color: theme.colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         category,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'perawatan':
-        return Colors.green;
-      case 'perbaikan':
-        return Colors.orange;
-      case 'pembersihan':
-        return Colors.blue;
-      case 'modifikasi':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
   }
 }

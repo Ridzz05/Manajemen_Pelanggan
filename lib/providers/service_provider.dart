@@ -32,6 +32,8 @@ class ServiceProvider extends ChangeNotifier {
     return categories;
   }
 
+  List<String> _extraCategories = []; // Temporary storage for newly added categories
+
   // Get all categories including placeholders with caching
   List<String> get allCategories {
     if (_cachedAllCategories != null) return _cachedAllCategories!;
@@ -39,10 +41,19 @@ class ServiceProvider extends ChangeNotifier {
     final categories = _services
         .map((service) => service.category)
         .toSet()
+        .union(_extraCategories.toSet()) // Include extra categories
         .toList();
     categories.insert(0, 'Semua');
     _cachedAllCategories = categories;
     return categories;
+  }
+
+  void addCategory(String category) {
+    if (!_extraCategories.contains(category)) {
+      _extraCategories.add(category);
+      _clearCategoryCache();
+      notifyListeners();
+    }
   }
 
   // Clear cache when services are updated

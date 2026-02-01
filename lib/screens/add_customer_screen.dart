@@ -68,17 +68,18 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
-          'Tambah Pelanggan',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          'Pelanggan Baru',
+          style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
-        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -93,8 +94,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                   onPressed: _isLoading ? null : _saveCustomer,
                   child: Text(
                     'Simpan',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -109,279 +110,207 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
         child: SlideTransition(
           position: _slideAnimation,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.person_add_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Tambah Pelanggan Baru',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Isi informasi pelanggan dengan lengkap dan akurat',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.outline,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Form Fields
+                  // 1. Name Section
                   Text(
-                    'Informasi Pelanggan',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    'Nama',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Name Field
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nama Lengkap',
-                      hintText: 'Masukkan nama lengkap pelanggan',
-                      prefixIcon: Icon(
-                        Icons.person_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.red),
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
+                    autofocus: true, // Auto-focus enabled
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
+                    decoration: InputDecoration(
+                      hintText: 'Nama Depan & Belakang',
+                      hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                        color: colorScheme.outline.withOpacity(0.5),
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    textCapitalization: TextCapitalization.words,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Nama tidak boleh kosong';
+                        return 'Nama wajib diisi';
                       }
                       return null;
                     },
                   ),
+                  
+                  const SizedBox(height: 32),
 
-                  const SizedBox(height: 16),
-
-                  // Contact Method and Value Section
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Contact Method Dropdown
-                      DropdownButtonFormField<String>(
-                        value: _selectedContactMethod,
-                        decoration: InputDecoration(
-                          labelText: 'Metode Kontak',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 2,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.red),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surface,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                        ),
-                        items: _availableContactMethods.map((method) {
-                          return DropdownMenuItem(
-                            value: method,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _getContactMethodIcon(method),
-                                  color: _getContactMethodColor(method),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(method),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          if (value != null) {
+                  // 2. Contact Method Section
+                  Text(
+                    'Hubungi lewat apa?',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12, // Gap between chips
+                    runSpacing: 12,
+                    children: _availableContactMethods.map((method) {
+                      final isSelected = _selectedContactMethod == method;
+                      return ChoiceChip(
+                        label: Text(method),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
                             setState(() {
-                              _selectedContactMethod = value;
-                              _contactValueController.clear(); // Clear value when method changes
+                              _selectedContactMethod = method;
+                              // Optional: Clear value if switching types drastically, 
+                              // but keeping it might be better for UX in case of accidental switch
                             });
                           }
                         },
-                      ),
-                      const SizedBox(height: 16),
-                      // Contact Value Input
-                      TextFormField(
-                        controller: _contactValueController,
-                        decoration: InputDecoration(
-                          labelText: _getContactValueLabel(_selectedContactMethod),
-                          hintText: _getContactValueHint(_selectedContactMethod),
-                          prefixIcon: Icon(
-                            _getContactMethodIcon(_selectedContactMethod),
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 2,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.red),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surface,
+                        avatar: isSelected ? null : Icon(
+                          _getContactMethodIcon(method),
+                          size: 18,
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                        keyboardType: _getContactValueKeyboardType(_selectedContactMethod),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '${_getContactValueLabel(_selectedContactMethod)} tidak boleh kosong';
-                          }
-                          if (_selectedContactMethod == 'Email' && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                            return 'Format email tidak valid';
-                          }
-                          if (_selectedContactMethod == 'WA Business' && !RegExp(r'^[0-9+\-\s()]+$').hasMatch(value)) {
-                            return 'Format nomor WA tidak valid';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+                        showCheckmark: false,
+                        labelStyle: TextStyle(
+                          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                        selectedColor: colorScheme.primary,
+                        backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: isSelected ? Colors.transparent : colorScheme.outlineVariant,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      );
+                    }).toList(),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // Service Selection Field
+                  // 3. Contact Value Input
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: TextFormField(
+                      key: ValueKey(_selectedContactMethod), // Force rebuild on change
+                      controller: _contactValueController,
+                      decoration: InputDecoration(
+                        labelText: _getContactValueLabel(_selectedContactMethod),
+                        hintText: _getContactValueHint(_selectedContactMethod),
+                        prefixIcon: Icon(
+                          _getContactMethodIcon(_selectedContactMethod),
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: colorScheme.primary),
+                        ),
+                      ),
+                      keyboardType: _getContactValueKeyboardType(_selectedContactMethod),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) {
+                         if (value == null || value.isEmpty) {
+                            return 'Kontak wajib diisi';
+                         }
+                         // Simple validation logic
+                         if (_selectedContactMethod == 'Email' && !value.contains('@')) {
+                            return 'Format email tidak valid';
+                         }
+                         return null;
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // 4. Service Selection (Optional)
+                  Text(
+                    'Tertarik layanan apa? (Opsional)',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Consumer<ServiceProvider>(
                     builder: (context, serviceProvider, child) {
-                      final services = serviceProvider.services; // Show all services, not just active ones
+                      final services = serviceProvider.services;
+                      
+                      if (services.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: colorScheme.outlineVariant),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, color: colorScheme.onSurfaceVariant, size: 20),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Belum ada layanan tersedia',
+                                style: TextStyle(color: colorScheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
 
                       return DropdownButtonFormField<int>(
                         value: _selectedServiceId,
+                        isExpanded: true,
                         decoration: InputDecoration(
-                          labelText: 'Layanan yang Dipesan',
-                          hintText: 'Pilih layanan untuk pelanggan ini',
-                          prefixIcon: Icon(
-                            Icons.business_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          filled: true,
+                          fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 2,
-                            ),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.red),
-                          ),
-                          filled: true,
-                          fillColor: Theme.of(context).colorScheme.surface,
                         ),
+                        hint: const Text('Pilih salah satu layanan'),
                         items: [
-                          const DropdownMenuItem(
+                           const DropdownMenuItem(
                             value: null,
-                            child: Text('Tidak ada layanan tersedia'),
+                            child: Text('Tidak memilih layanan sekarang'),
                           ),
                           ...services.map((service) {
-                            final duration = service.durationInDays != null
-                                ? '${service.durationInDays} hari'
-                                : 'Tidak ditentukan';
                             return DropdownMenuItem(
                               value: service.id,
-                              child: Text('${service.name} - Rp ${service.price} ($duration)'),
+                              child: Text(
+                                service.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             );
                           }).toList(),
                         ],
@@ -396,54 +325,51 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
                             }
                           });
                         },
-                        validator: (value) {
-                          // Tidak wajib memilih layanan, jadi tidak perlu validasi ketat
-                          return null;
-                        },
                       );
                     },
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _saveCustomer,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Text(
-                              'Tambah Pelanggan',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: Container(
+         padding: const EdgeInsets.all(20),
+         decoration: BoxDecoration(
+           color: colorScheme.surface,
+           border: Border(top: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5))),
+         ),
+         child: SafeArea(
+           child: SizedBox(
+             width: double.infinity,
+             height: 52,
+             child: FilledButton(
+               onPressed: _isLoading ? null : _saveCustomer,
+               style: FilledButton.styleFrom(
+                 backgroundColor: theme.colorScheme.primary,
+                 foregroundColor: theme.colorScheme.onPrimary,
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(16),
+                 ),
+                 elevation: 0,
+               ),
+               child: _isLoading
+                   ? SizedBox(
+                       width: 24,
+                       height: 24,
+                       child: CircularProgressIndicator(
+                         color: theme.colorScheme.onPrimary,
+                         strokeWidth: 2.5,
+                       ),
+                     )
+                   : const Text(
+                       'Simpan Pelanggan',
+                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                     ),
+             ),
+           ),
+         ),
       ),
     );
   }
@@ -462,8 +388,8 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
         name: _nameController.text.trim(),
         contactMethod: _selectedContactMethod,
         contactValue: _contactValueController.text.trim(),
-        phone: _contactValueController.text.trim(), // Also set phone for compatibility
-        address: '', // Address field removed, set to empty string
+        phone: _selectedContactMethod == 'WA Business' ? _contactValueController.text.trim() : '', 
+        address: '', 
         selectedServiceId: _selectedServiceId,
         selectedServiceName: _selectedServiceName,
         createdAt: DateTime.now(),
@@ -473,32 +399,37 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
       final success = await context.read<CustomerProvider>().addCustomer(customer);
 
       if (success) {
-        // Show success message and navigate back
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Pelanggan "${customer.name}" berhasil ditambahkan'),
+            content: Text('${customer.name} berhasil disimpan'),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(10),
           ),
         );
 
-        // Navigate back after delay
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.of(context).pop();
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) Navigator.of(context).pop();
         });
       } else {
+         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gagal menambahkan pelanggan. Silakan coba lagi.'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('Gagal menyimpan data'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
+       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Terjadi kesalahan: $e'),
-          backgroundColor: Colors.red,
+          content: Text('Error: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     } finally {
@@ -510,69 +441,39 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
     }
   }
 
-  // Helper methods for contact method
+  // Helper methods
   IconData _getContactMethodIcon(String method) {
     switch (method) {
-      case 'WA Business':
-        return Icons.business_rounded;
-      case 'Telegram':
-        return Icons.telegram_rounded;
-      case 'Email':
-        return Icons.email_rounded;
-      default:
-        return Icons.contact_mail_rounded;
-    }
-  }
-
-  Color _getContactMethodColor(String method) {
-    switch (method) {
-      case 'WA Business':
-        return Colors.green;
-      case 'Telegram':
-        return Colors.blue;
-      case 'Email':
-        return Colors.orange;
-      default:
-        return Theme.of(context).colorScheme.primary;
+      case 'WA Business': return Icons.whatshot_rounded; // Using a clearly distinct icon for WA if needed, or stick to business
+      case 'Telegram': return Icons.send_rounded;
+      case 'Email': return Icons.email_rounded;
+      default: return Icons.contact_page_rounded;
     }
   }
 
   String _getContactValueLabel(String method) {
     switch (method) {
-      case 'WA Business':
-        return 'No. WA Business';
-      case 'Telegram':
-        return 'Username Telegram';
-      case 'Email':
-        return 'Alamat Email';
-      default:
-        return 'Kontak';
+      case 'WA Business': return 'Nomor WhatsApp';
+      case 'Telegram': return 'Username Telegram';
+      case 'Email': return 'Alamat Email';
+      default: return 'Info Kontak';
     }
   }
 
   String _getContactValueHint(String method) {
     switch (method) {
-      case 'WA Business':
-        return 'Contoh: 08123456789';
-      case 'Telegram':
-        return 'Contoh: @username';
-      case 'Email':
-        return 'Contoh: nama@email.com';
-      default:
-        return 'Masukkan kontak';
+      case 'WA Business': return 'Contoh: 0812xxx';
+      case 'Telegram': return 'Contoh: @username';
+      case 'Email': return 'nama@email.com';
+      default: return '';
     }
   }
 
   TextInputType _getContactValueKeyboardType(String method) {
     switch (method) {
-      case 'WA Business':
-        return TextInputType.phone;
-      case 'Telegram':
-        return TextInputType.text;
-      case 'Email':
-        return TextInputType.emailAddress;
-      default:
-        return TextInputType.text;
+      case 'WA Business': return TextInputType.phone;
+      case 'Email': return TextInputType.emailAddress;
+      default: return TextInputType.text;
     }
   }
 }

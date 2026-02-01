@@ -8,7 +8,7 @@ import '../models/service.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'awb_management.db';
-  static const int _databaseVersion = 5; // Updated version for customer service columns
+  static const int _databaseVersion = 6; // Updated to clear dummy data
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -31,7 +31,6 @@ class DatabaseHelper {
       // Fallback: Use a simple path for platforms where path_provider is not available
       // This is a temporary workaround - in production, you'd want to handle this better
       path = join('./', _databaseName);
-      // Removed debug print statement for production
     }
 
     return await openDatabase(
@@ -47,18 +46,14 @@ class DatabaseHelper {
     await _createCustomersTable(db);
     await _createServicesTable(db);
     await _insertDefaultBusinessProfile(db);
-    await _insertDummyData(db);
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Removed debug print statement for production
-
     if (oldVersion < 2) {
       try {
         // Strategy: Drop and recreate customers table with new schema
         await _recreateCustomersTable(db);
       } catch (e) {
-        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateCustomersTableSafely(db);
       }
@@ -69,7 +64,6 @@ class DatabaseHelper {
         // Strategy: Drop and recreate services table with new schema
         await _recreateServicesTable(db);
       } catch (e) {
-        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateServicesTableSafely(db);
       }
@@ -80,10 +74,14 @@ class DatabaseHelper {
         // Add selected_service_id and selected_service_name columns to customers table
         await _migrateCustomersTableToServiceColumns(db);
       } catch (e) {
-        // Removed debug print statement for production
         // If all else fails, try the safer migration approach
         await _migrateCustomersTableToServiceColumnsSafely(db);
       }
+    }
+
+    if (oldVersion < 6) {
+      // Clear dummy data from customers table
+      await db.delete('customers');
     }
   }
 
@@ -225,60 +223,6 @@ class DatabaseHelper {
     await db.insert('business_profiles', defaultProfile.toMap());
   }
 
-  Future _insertDummyData(Database db) async {
-    // Insert dummy customers
-    final customers = [
-      Customer(
-        name: 'John Doe',
-        contactMethod: 'WA Business',
-        contactValue: '08123456789',
-        phone: '08123456789', // Phone field kept for backward compatibility
-        address: '', // Address field removed, set to empty string
-        createdAt: DateTime.now().subtract(const Duration(days: 30)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        name: 'Jane Smith',
-        contactMethod: 'Telegram',
-        contactValue: '@janesmith',
-        phone: '08198765432',
-        address: '',
-        createdAt: DateTime.now().subtract(const Duration(days: 25)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        name: 'Bob Wilson',
-        contactMethod: 'Email',
-        contactValue: 'bob@example.com',
-        phone: '08134567890',
-        address: '',
-        createdAt: DateTime.now().subtract(const Duration(days: 20)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        name: 'Alice Johnson',
-        contactMethod: 'WA Business',
-        contactValue: '08145678901',
-        phone: '08145678901',
-        address: '',
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        updatedAt: DateTime.now(),
-      ),
-      Customer(
-        name: 'Charlie Brown',
-        contactMethod: 'Telegram',
-        contactValue: '@charliebrown',
-        phone: '08156789012',
-        address: '',
-        createdAt: DateTime.now().subtract(const Duration(days: 10)),
-        updatedAt: DateTime.now(),
-      ),
-    ];
-
-    for (var customer in customers) {
-      await db.insert('customers', customer.toMap());
-    }
-  }
 
   // Business Profile CRUD Operations
   Future<BusinessProfile?> getBusinessProfile() async {
