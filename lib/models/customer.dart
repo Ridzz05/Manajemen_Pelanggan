@@ -1,12 +1,17 @@
+import 'dart:convert';
+
 class Customer {
   final int? id;
   final String name;
   final String contactMethod;
   final String contactValue;
   final String phone;
-  final String address; // Made optional for minimal form
-  final int? selectedServiceId; // ID layanan yang dipilih pelanggan
-  final String? selectedServiceName; // Nama layanan yang dipilih (untuk backward compatibility)
+  final String address;
+  final int? selectedServiceId; // Deprecated
+  final String? selectedServiceName; // Deprecated
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final List<String> serviceCategories;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -16,9 +21,12 @@ class Customer {
     required this.contactMethod,
     required this.contactValue,
     this.phone = '',
-    this.address = '', // Made optional with default empty string
-    this.selectedServiceId, // ID layanan yang dipilih
-    this.selectedServiceName, // Nama layanan yang dipilih
+    this.address = '',
+    this.selectedServiceId,
+    this.selectedServiceName,
+    this.startDate,
+    this.endDate,
+    this.serviceCategories = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,21 +41,32 @@ class Customer {
       'address': address,
       'selected_service_id': selectedServiceId,
       'selected_service_name': selectedServiceName,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'service_categories': jsonEncode(serviceCategories),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
   }
 
   factory Customer.fromMap(Map<String, dynamic> map) {
-    // Handle backward compatibility with old email field
+    // Handle backward compatibility
     String contactValue = map['contact_value'] ?? '';
     String contactMethod = map['contact_method'] ?? 'Email';
 
-    // If contact_value is empty but email exists, use email as contact_value
     if (contactValue.isEmpty && map['email'] != null && map['email'].toString().isNotEmpty) {
       contactValue = map['email'].toString();
-      // Assume email contact method for backward compatibility
       contactMethod = 'Email';
+    }
+
+    List<String> categories = [];
+    if (map['service_categories'] != null) {
+      try {
+        categories = List<String>.from(jsonDecode(map['service_categories']));
+      } catch (e) {
+        // Fallback for empty or invalid json
+        categories = [];
+      }
     }
 
     return Customer(
@@ -59,6 +78,9 @@ class Customer {
       address: map['address'] ?? '',
       selectedServiceId: map['selected_service_id'],
       selectedServiceName: map['selected_service_name'],
+      startDate: map['start_date'] != null ? DateTime.parse(map['start_date']) : null,
+      endDate: map['end_date'] != null ? DateTime.parse(map['end_date']) : null,
+      serviceCategories: categories,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
     );
@@ -73,6 +95,9 @@ class Customer {
     String? address,
     int? selectedServiceId,
     String? selectedServiceName,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? serviceCategories,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -85,6 +110,9 @@ class Customer {
       address: address ?? this.address,
       selectedServiceId: selectedServiceId ?? this.selectedServiceId,
       selectedServiceName: selectedServiceName ?? this.selectedServiceName,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      serviceCategories: serviceCategories ?? this.serviceCategories,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

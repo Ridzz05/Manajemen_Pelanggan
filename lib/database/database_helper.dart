@@ -8,7 +8,7 @@ import '../models/service.dart';
 
 class DatabaseHelper {
   static const String _databaseName = 'awb_management.db';
-  static const int _databaseVersion = 6; // Updated to clear dummy data
+  static const int _databaseVersion = 7; // Updated for form refactor
 
   DatabaseHelper._privateConstructor();
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
@@ -45,7 +45,9 @@ class DatabaseHelper {
     await _createBusinessProfilesTable(db);
     await _createCustomersTable(db);
     await _createServicesTable(db);
+    await _createCategoriesTable(db); // New table
     await _insertDefaultBusinessProfile(db);
+    await _seedDefaultCategories(db); // Seed default data
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -83,51 +85,88 @@ class DatabaseHelper {
       // Clear dummy data from customers table
       await db.delete('customers');
     }
+
+    if (oldVersion < 7) {
+      // Version 7: Form Refactor
+      await _createCategoriesTable(db);
+      await _seedDefaultCategories(db);
+      await _migrateCustomersTableV7(db);
+    }
   }
 
-  Future _migrateCustomersTableSafely(Database db) async {
+  Future _createCategoriesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        created_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future _seedDefaultCategories(Database db) async {
+    final List<String> defaults = ['Website', 'Aplikasi', 'Desain'];
+    for (String cat in defaults) {
+      try {
+        await db.insert('categories', {
+          'name': cat,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        // Ignore duplicate errors
+      }
+    }
+  }
+
+  // Category CRUD Operations
+  Future<List<String>> getCategories() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'categories',
+      orderBy: 'name ASC',
+    );
+    return List.generate(maps.length, (i) => maps[i]['name'] as String);
+  }
+
+  Future<int> insertCategory(String name) async {
+    final db = await database;
     try {
-      // First, let's check if the new columns already exist
+      return await db.insert('categories', {
+        'name': name,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      return -1; // Duplicate or error
+    }
+  }
+
+  Future<int> deleteCategory(String name) async {
+    final db = await database;
+    return await db.delete('categories', where: 'name = ?', whereArgs: [name]);
+  }
+
+  Future _migrateCustomersTableV7(Database db) async {
+    try {
+      // Check existing columns
       final result = await db.rawQuery("PRAGMA table_info(customers)");
       final columns = result.map((row) => row['name'] as String).toList();
 
-      // Add contact_method column if it doesn't exist
-      if (!columns.contains('contact_method')) {
-        await db.execute('ALTER TABLE customers ADD COLUMN contact_method TEXT NOT NULL DEFAULT "Email"');
-        // Removed debug print statement for production
+      if (!columns.contains('start_date')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN start_date TEXT');
       }
-
-      // Add contact_value column if it doesn't exist
-      if (!columns.contains('contact_value')) {
-        await db.execute('ALTER TABLE customers ADD COLUMN contact_value TEXT NOT NULL DEFAULT ""');
-        // Removed debug print statement for production
+      if (!columns.contains('end_date')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN end_date TEXT');
       }
-
-      // Make email column nullable if it exists - deprecated, but keeping for backward compatibility
-      if (columns.contains('email')) {
-        try {
-          await db.execute('ALTER TABLE customers ALTER COLUMN email TEXT');
-          // Removed debug print statement for production
-        } catch (e) {
-          // Removed debug print statement for production
-        }
+      if (!columns.contains('service_categories')) {
+        await db.execute('ALTER TABLE customers ADD COLUMN service_categories TEXT');
       }
-
-      // Migrate existing email data to new structure - skip this since email field is deprecated
-      // await db.execute('UPDATE customers SET contact_method = "Email", contact_value = email WHERE email IS NOT NULL AND (contact_value IS NULL OR contact_value = "")');
-
-      // Removed debug print statement for production
     } catch (e) {
-      // Removed debug print statement for production
-      throw e;
+      print('Migration V7 Error: $e');
     }
   }
 
   Future _recreateCustomersTable(Database db) async {
     try {
-      // Removed debug print statement for production
-
-      // Create temporary table with new structure
       await db.execute('''
         CREATE TABLE customers_backup (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,7 +174,7 @@ class DatabaseHelper {
           contact_method TEXT NOT NULL DEFAULT 'Email',
           contact_value TEXT NOT NULL,
           phone TEXT NOT NULL DEFAULT '',
-          address TEXT NOT NULL DEFAULT '', -- Made optional
+          address TEXT NOT NULL DEFAULT '',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
@@ -161,12 +200,27 @@ class DatabaseHelper {
 
       // Rename backup table to customers
       await db.execute('ALTER TABLE customers_backup RENAME TO customers');
-
-      // Removed debug print statement for production
     } catch (e) {
-      // Removed debug print statement for production
       throw e;
     }
+  }
+
+  Future _migrateCustomersTableSafely(Database db) async {
+      // Basic migration to ensure table exists or has basic columns if needed
+      // For now, we can leave this empty or just try to add columns if missing
+      try {
+        final result = await db.rawQuery("PRAGMA table_info(customers)");
+        final columns = result.map((row) => row['name'] as String).toList();
+        
+        if (!columns.contains('phone')) {
+             await db.execute('ALTER TABLE customers ADD COLUMN phone TEXT NOT NULL DEFAULT ""');
+        }
+         if (!columns.contains('address')) {
+             await db.execute('ALTER TABLE customers ADD COLUMN address TEXT NOT NULL DEFAULT ""');
+        }
+      } catch (e) {
+          // Ignore
+      }
   }
 
   Future _createBusinessProfilesTable(Database db) async {
@@ -195,8 +249,11 @@ class DatabaseHelper {
         contact_value TEXT NOT NULL,
         phone TEXT NOT NULL DEFAULT '',
         address TEXT NOT NULL DEFAULT '', -- Made optional with default empty string
-        selected_service_id INTEGER, -- ID layanan yang dipilih pelanggan
-        selected_service_name TEXT, -- Nama layanan yang dipilih
+        selected_service_id INTEGER, -- Deprecated/Optional now
+        selected_service_name TEXT, -- Deprecated/Optional now
+        start_date TEXT,
+        end_date TEXT,
+        service_categories TEXT, -- Stores JSON list of strings (e.g., '["Website", "Design"]')
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )

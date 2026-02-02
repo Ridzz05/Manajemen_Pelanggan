@@ -5,61 +5,54 @@ import '../models/service.dart';
 class ServiceProvider extends ChangeNotifier {
   List<Service> _services = [];
   List<Service> _filteredServices = [];
+  List<String> _categories = []; // Loaded from DB
   bool _isLoading = false;
   String _searchQuery = '';
   String _selectedCategory = 'Semua';
 
-  // Cache for categories to avoid repeated computation
-  List<String>? _cachedCategories;
-  List<String>? _cachedAllCategories;
-
   List<Service> get services => _services;
   List<Service> get activeServices => _services.where((service) => service.isActive).toList();
   List<Service> get filteredServices => _filteredServices;
+  List<String> get categories => _categories; // Expose categories directly
   bool get isLoading => _isLoading;
 
-  // Get unique categories (excluding placeholder categories) with caching
-  List<String> get categories {
-    if (_cachedCategories != null) return _cachedCategories!;
-
-    final categories = _services
-        .where((service) => !service.name.startsWith('Kategori: '))
-        .map((service) => service.category)
-        .toSet()
-        .toList();
-    categories.insert(0, 'Semua');
-    _cachedCategories = categories;
-    return categories;
-  }
-
-  List<String> _extraCategories = []; // Temporary storage for newly added categories
-
-  // Get all categories including placeholders with caching
-  List<String> get allCategories {
-    if (_cachedAllCategories != null) return _cachedAllCategories!;
-
-    final categories = _services
-        .map((service) => service.category)
-        .toSet()
-        .union(_extraCategories.toSet()) // Include extra categories
-        .toList();
-    categories.insert(0, 'Semua');
-    _cachedAllCategories = categories;
-    return categories;
-  }
-
-  void addCategory(String category) {
-    if (!_extraCategories.contains(category)) {
-      _extraCategories.add(category);
-      _clearCategoryCache();
+  Future<void> loadCategories() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final dbHelper = DatabaseHelper.instance;
+      _categories = await dbHelper.getCategories();
+    } catch (e) {
+      print('Error loading categories: $e');
+      _categories = [];
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Clear cache when services are updated
-  void _clearCategoryCache() {
-    _cachedCategories = null;
-    _cachedAllCategories = null;
+  Future<bool> addCategory(String categoryName) async {
+    try {
+      final dbHelper = DatabaseHelper.instance;
+      await dbHelper.insertCategory(categoryName);
+      await loadCategories();
+      return true;
+    } catch (e) {
+      print('Error adding category: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteCategory(String categoryName) async {
+    try {
+      final dbHelper = DatabaseHelper.instance;
+      await dbHelper.deleteCategory(categoryName);
+      await loadCategories();
+      return true;
+    } catch (e) {
+      print('Error deleting category: $e');
+      return false;
+    }
   }
 
   Future<void> loadServices() async {
@@ -70,7 +63,10 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       _services = await dbHelper.getAllServices();
       _filteredServices = _services;
-      _clearCategoryCache(); // Clear cache when services are loaded
+      
+      // Also load categories when loading services (optional, but good practice)
+      _categories = await dbHelper.getCategories();
+      
     } catch (e) {
       print('Error loading services: $e');
       _services = [];
@@ -116,7 +112,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final id = await dbHelper.insertService(service);
       if (id > 0) {
-        await loadServices(); // Refresh list and clear cache
+        await loadServices();
         return true;
       }
       return false;
@@ -131,7 +127,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final rowsAffected = await dbHelper.updateService(service);
       if (rowsAffected > 0) {
-        await loadServices(); // Refresh list and clear cache
+        await loadServices();
         return true;
       }
       return false;
@@ -146,7 +142,7 @@ class ServiceProvider extends ChangeNotifier {
       final dbHelper = DatabaseHelper.instance;
       final rowsAffected = await dbHelper.deleteService(id);
       if (rowsAffected > 0) {
-        await loadServices(); // Refresh list and clear cache
+        await loadServices();
         return true;
       }
       return false;

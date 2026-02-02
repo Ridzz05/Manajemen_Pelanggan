@@ -65,7 +65,7 @@ class _EditServiceScreenState extends State<EditServiceScreen>
     super.didChangeDependencies();
 
     final serviceProvider = context.read<ServiceProvider>();
-    final providerCategories = serviceProvider.allCategories
+    final providerCategories = serviceProvider.categories
         .where((cat) => cat != 'Semua')
         .toSet();
 
@@ -271,7 +271,7 @@ class _EditServiceScreenState extends State<EditServiceScreen>
             builder: (context, serviceProvider, child) {
               // Get categories from provider
               final providerCategories = serviceProvider
-                  .allCategories
+                  .categories
                   .where((cat) => cat != 'Semua')
                   .toSet();
 
