@@ -95,17 +95,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
                           ],
-                          if (stats.recentServices.isNotEmpty) ...[
-                            _buildSectionHeader('Layanan Baru', theme.colorScheme.secondary),
+                          if (stats.recentCategories.isNotEmpty) ...[
+                            _buildSectionHeader('Kategori Layanan Baru', theme.colorScheme.secondary),
                             const SizedBox(height: 8),
-                            ...stats.recentServices.take(3).map(
-                              (service) => _buildRecentActivityCard(
+                            ...stats.recentCategories.take(3).map(
+                              (categoryMap) => _buildRecentActivityCard(
                                 context,
-                                service.name,
-                                service.category,
-                                Icons.add_business_outlined,
+                                categoryMap['name'],
+                                'Kategori baru',
+                                Icons.category_outlined,
                                 theme.colorScheme.secondary,
-                                service.createdAt,
+                                DateTime.parse(categoryMap['created_at']),
                               ),
                             ),
                           ],

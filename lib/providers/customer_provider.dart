@@ -13,6 +13,11 @@ class CustomerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
 
+  List<Customer> getCustomersByCategory(String category) {
+    if (category == 'Semua') return _customers;
+    return _customers.where((c) => c.serviceCategories.contains(category)).toList();
+  }
+
   Future<void> loadCustomers() async {
     _isLoading = true;
     notifyListeners();

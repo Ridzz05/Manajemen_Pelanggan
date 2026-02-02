@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
 class ValidationService {
-  /// Validate service form data
   static Map<String, String?> validateServiceForm({
     required String name,
     required String description,

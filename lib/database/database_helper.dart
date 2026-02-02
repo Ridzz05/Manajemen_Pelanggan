@@ -145,6 +145,15 @@ class DatabaseHelper {
     return await db.delete('categories', where: 'name = ?', whereArgs: [name]);
   }
 
+  Future<List<Map<String, dynamic>>> getRecentCategories({int limit = 5}) async {
+    final db = await database;
+    return await db.query(
+      'categories',
+      orderBy: 'created_at DESC',
+      limit: limit,
+    );
+  }
+
   Future _migrateCustomersTableV7(Database db) async {
     try {
       // Check existing columns
@@ -457,9 +466,9 @@ class DatabaseHelper {
       [startDate.toIso8601String()],
     );
 
-    // Query services count by month
+    // Query categories count by month
     final serviceResult = await db.rawQuery(
-      'SELECT strftime(\'%Y-%m\', created_at) as month, COUNT(*) as count FROM services WHERE created_at >= ? GROUP BY strftime(\'%Y-%m\', created_at) ORDER BY month ASC',
+      'SELECT strftime(\'%Y-%m\', created_at) as month, COUNT(*) as count FROM categories WHERE created_at >= ? GROUP BY strftime(\'%Y-%m\', created_at) ORDER BY month ASC',
       [startDate.toIso8601String()],
     );
 

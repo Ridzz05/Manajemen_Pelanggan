@@ -14,7 +14,9 @@ class ServiceProvider extends ChangeNotifier {
   List<Service> get activeServices => _services.where((service) => service.isActive).toList();
   List<Service> get filteredServices => _filteredServices;
   List<String> get categories => _categories; // Expose categories directly
+  String get selectedCategory => _selectedCategory;
   bool get isLoading => _isLoading;
+  String get searchQuery => _searchQuery;
 
   Future<void> loadCategories() async {
     _isLoading = true;

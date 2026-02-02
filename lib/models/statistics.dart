@@ -8,7 +8,7 @@ class StatisticsData {
   final String mostPopularService;
   final int mostPopularServiceCount;
   final List<Customer> recentCustomers;
-  final List<Service> recentServices;
+  final List<Map<String, dynamic>> recentCategories;
   final List<PieChartSectionData> serviceDistributionData;
   final List<BarChartGroupData> monthlyGrowthData;
 
@@ -18,7 +18,7 @@ class StatisticsData {
     required this.mostPopularService,
     required this.mostPopularServiceCount,
     required this.recentCustomers,
-    required this.recentServices,
+    required this.recentCategories,
     required this.serviceDistributionData,
     required this.monthlyGrowthData,
   });
@@ -30,7 +30,7 @@ class StatisticsData {
       mostPopularService: 'Tidak ada data',
       mostPopularServiceCount: 0,
       recentCustomers: [],
-      recentServices: [],
+      recentCategories: [],
       serviceDistributionData: [],
       monthlyGrowthData: [],
     );

@@ -6,7 +6,9 @@ import '../models/customer.dart';
 import 'package:intl/intl.dart';
 
 class AddCustomerScreen extends StatefulWidget {
-  const AddCustomerScreen({super.key});
+  final Customer? customerToEdit;
+
+  const AddCustomerScreen({super.key, this.customerToEdit});
 
   @override
   State<AddCustomerScreen> createState() => _AddCustomerScreenState();
@@ -54,6 +56,17 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
     // Start animation
     _animationController.forward();
 
+    // Pre-fill if editing
+    if (widget.customerToEdit != null) {
+      final c = widget.customerToEdit!;
+      _nameController.text = c.name;
+      _selectedContactMethod = c.contactMethod;
+      _contactValueController.text = c.contactValue;
+      _startDate = c.startDate;
+      _endDate = c.endDate;
+      _selectedCategories.addAll(c.serviceCategories);
+    }
+
     // Load categories
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ServiceProvider>().loadCategories();
@@ -76,7 +89,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Pelanggan Baru'),
+        title: Text(widget.customerToEdit != null ? 'Edit Pelanggan' : 'Pelanggan Baru'),
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -327,6 +340,7 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
 
     try {
       final customer = Customer(
+        id: widget.customerToEdit?.id, // Preserve ID if editing
         name: _nameController.text.trim(),
         contactMethod: _selectedContactMethod,
         contactValue: _contactValueController.text.trim(),
@@ -335,17 +349,27 @@ class _AddCustomerScreenState extends State<AddCustomerScreen>
         startDate: _startDate,
         endDate: _endDate,
         serviceCategories: _selectedCategories,
-        createdAt: DateTime.now(),
+        createdAt: widget.customerToEdit?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final success = await context.read<CustomerProvider>().addCustomer(customer);
+      bool success;
+      if (widget.customerToEdit != null) {
+        success = await context.read<CustomerProvider>().updateCustomer(customer);
+      } else {
+        success = await context.read<CustomerProvider>().addCustomer(customer);
+      }
 
       if (!mounted) return;
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pelanggan berhasil disimpan'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text(widget.customerToEdit != null 
+                ? 'Data pelanggan berhasil diperbarui' 
+                : 'Pelanggan berhasil disimpan'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       } else {

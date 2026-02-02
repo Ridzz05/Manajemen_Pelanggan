@@ -107,23 +107,23 @@ class HomeStatisticsSection extends StatelessWidget {
                   const SizedBox(height: 16),
                 ],
 
-                // Recent Services
-                if (stats.recentServices.isNotEmpty) ...[
+                // Recent Services (Categories)
+                if (stats.recentCategories.isNotEmpty) ...[
                   Text(
-                    'Layanan Baru',
+                    'Kategori Layanan Baru',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.secondary,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...stats.recentServices.take(3).map(
-                    (service) => RecentActivityCard(
-                      title: service.name,
-                      subtitle: service.category,
-                      icon: Icons.add_business_rounded,
+                  ...stats.recentCategories.take(3).map(
+                    (categoryMap) => RecentActivityCard(
+                      title: categoryMap['name'],
+                      subtitle: 'Kategori baru',
+                      icon: Icons.category_rounded,
                       color: Colors.green,
-                      date: service.createdAt,
+                      date: DateTime.parse(categoryMap['created_at']),
                       formatDate: formatActivityDate,
                     ),
                   ),

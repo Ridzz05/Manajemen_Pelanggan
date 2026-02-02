@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/customer_provider.dart';
 import '../models/customer.dart';
+import 'add_customer_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -269,14 +270,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         ),
                       ],
                     ),
-                    if (customer.selectedServiceName != null && customer.selectedServiceName!.isNotEmpty) ...[
+                    if (customer.serviceCategories.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
-                        'Layanan: ${customer.selectedServiceName}',
+                        'Kategori: ${customer.serviceCategories.join(", ")}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.secondary,
                           fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
@@ -357,11 +360,44 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   title: Text(customer.contactMethod),
                   subtitle: Text(customer.contactValue),
                 ),
-                if (customer.selectedServiceName != null)
-                  ListTile(
-                    leading: const Icon(Icons.layers_outlined),
-                    title: const Text('Layanan'),
-                    subtitle: Text(customer.selectedServiceName!),
+                if (customer.serviceCategories.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.layers_outlined, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 16),
+                            Text(
+                              'Kategori Layanan', 
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 40),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: customer.serviceCategories.map((category) {
+                              return Chip(
+                                label: Text(category),
+                                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                labelStyle: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  fontSize: 12,
+                                ),
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -385,90 +421,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _showEditCustomerDialog(BuildContext context, Customer customer) {
-    // This part should launch the AddCustomerScreen in edit mode ideally, 
-    // or just show a simple dialog as before but styled cleaner.
-    // For now, I'll keep the dialog approach but cleaner.
-    
-    final nameController = TextEditingController(text: customer.name);
-    final contactValueController = TextEditingController(text: customer.contactValue);
-    String selectedContactMethod = customer.contactMethod;
-    final availableContactMethods = ['WA Business', 'Telegram', 'Email'];
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Pelanggan'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: selectedContactMethod,
-                  decoration: const InputDecoration(
-                    labelText: 'Metode Kontak',
-                  ),
-                  items: availableContactMethods.map((method) {
-                    return DropdownMenuItem(
-                      value: method,
-                      child: Text(method),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    selectedContactMethod = value!;
-                  },
-                ),
-                TextField(
-                  controller: contactValueController,
-                  decoration: const InputDecoration(
-                    labelText: 'Kontak',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-               onPressed: () => _showDeleteConfirmation(context, customer),
-               style: TextButton.styleFrom(foregroundColor: Colors.red),
-               child: const Text('Hapus'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                 final updatedCustomer = customer.copyWith(
-                  name: nameController.text,
-                  contactMethod: selectedContactMethod,
-                  contactValue: contactValueController.text,
-                  updatedAt: DateTime.now(),
-                );
-
-                final success = await context.read<CustomerProvider>().updateCustomer(updatedCustomer);
-                if (!context.mounted) return;
-                Navigator.of(context).pop(); // Close edit dialog
-
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pelanggan diperbarui')),
-                  );
-                }
-              },
-              child: const Text('Simpan'),
-            ),
-          ],
-        );
-      },
-    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddCustomerScreen(customerToEdit: customer),
+      ),
+    ).then((_) {
+      // Refresh list after returning
+      context.read<CustomerProvider>().loadCustomers();
+    });
   }
 
   IconData _getContactMethodIcon(String method) {

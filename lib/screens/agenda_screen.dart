@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/service_provider.dart';
 import '../models/service.dart';
-import 'agenda/components/service_card.dart';
+import '../providers/customer_provider.dart';
+import 'agenda/service_detail_screen.dart';
 import 'edit_service_screen.dart';
 
 class AgendaScreen extends StatefulWidget {
@@ -51,12 +52,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         _buildHeader(theme),
                         const SizedBox(height: 16),
                         _buildSearchBar(context, isWide),
+                        const SizedBox(height: 16),
+                        Consumer<ServiceProvider>(
+                          builder: (context, provider, child) {
+                            return _buildCategoryFilter(context, provider);
+                          },
+                        ),
                       ],
                     ),
                   ),
                 ),
-                Consumer<ServiceProvider>(
-                  builder: (context, serviceProvider, child) {
+                Consumer2<ServiceProvider, CustomerProvider>(
+                  builder: (context, serviceProvider, customerProvider, child) {
                     if (serviceProvider.isLoading) {
                       return const SliverFillRemaining(
                         hasScrollBody: false,
@@ -66,7 +73,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       );
                     }
 
-                    if (serviceProvider.filteredServices.isEmpty) {
+                    // Prepare data: filter categories if a selection is made
+                    var displayCategories = serviceProvider.categories;
+                    if (serviceProvider.searchQuery.isNotEmpty) {
+                       displayCategories = displayCategories.where((c) => c.toLowerCase().contains(serviceProvider.searchQuery.toLowerCase())).toList();
+                    } else if (serviceProvider.selectedCategory != 'Semua') {
+                       displayCategories = [serviceProvider.selectedCategory];
+                    }
+
+                    if (displayCategories.isEmpty) {
                       return SliverFillRemaining(
                         hasScrollBody: false,
                         child: Padding(
@@ -81,28 +96,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
-                            final service = serviceProvider.filteredServices[index];
+                            final category = displayCategories[index];
+                            final customerCount = customerProvider.getCustomersByCategory(category).length;
+                            
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 12),
-                              child: ServiceCard(
-                                service: service,
-                                onActionSelected: (action) {
-                                  switch (action) {
-                                    case 'edit':
-                                      _navigateToEditServiceScreen(context, service);
-                                      break;
-                                    case 'delete':
-                                      _showDeleteConfirmation(context, service);
-                                      break;
-                                  }
-                                },
-                                onTap: () {
-                                  _showServiceDetailDialog(context, service);
-                                },
-                              ),
+                              child: _buildCategoryListItem(context, category, customerCount),
                             );
                           },
-                          childCount: serviceProvider.filteredServices.length,
+                          childCount: displayCategories.length,
                         ),
                       ),
                     );
@@ -187,6 +189,121 @@ class _AgendaScreenState extends State<AgendaScreen> {
               tooltip: 'Bersihkan',
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryListItem(BuildContext context, String category, int customerCount) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ServiceDetailScreen(categoryName: category)),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                 Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.layers_outlined,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$customerCount Pelanggan',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: theme.colorScheme.outline,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilter(BuildContext context, ServiceProvider provider) {
+    final theme = Theme.of(context);
+    // Ensure 'Semua' is always first and unique
+    final categories = ['Semua', ...provider.categories.where((c) => c != 'Semua')];
+    final selectedCategory = provider.selectedCategory;
+    
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: categories.map((category) {
+          // Accessing the private field via a new getter I need to create
+          final isSelected = category == (provider.selectedCategory); 
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: FilterChip(
+              label: Text(category),
+              selected: isSelected,
+              onSelected: (selected) {
+                context.read<ServiceProvider>().filterByCategory(category);
+              },
+              backgroundColor: theme.colorScheme.surface,
+              selectedColor: theme.colorScheme.primaryContainer,
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected
+                      ? Colors.transparent
+                      : theme.colorScheme.outlineVariant,
+                ),
+              ),
+              showCheckmark: false,
+            ),
+          );
+        }).toList(),
       ),
     );
   }

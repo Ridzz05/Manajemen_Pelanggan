@@ -17,40 +17,51 @@ class StatisticsProvider extends ChangeNotifier {
     try {
       final dbHelper = DatabaseHelper.instance;
 
-      // Get all customers and services
+      // Get all customers and categories
       final customers = await dbHelper.getAllCustomers();
-      final services = await dbHelper.getAllServices();
+      final categories = await dbHelper.getCategories();
 
       // Get recent data
       final recentCustomers = await dbHelper.getRecentCustomers(limit: 5);
-      final recentServices = await dbHelper.getRecentServices(limit: 5);
+      final recentCategories = await dbHelper.getRecentCategories(limit: 5); // Use new method
 
-      // Get service category distribution for pie chart
-      final categoryCount = await dbHelper.getServiceCategoryCount();
-
-      // Find most popular service
+      // Calculate Most Popular Service (Category) from Customer Data
+      Map<String, int> popularityMap = {};
+      for (var customer in customers) {
+        for (var cat in customer.serviceCategories) {
+          popularityMap[cat] = (popularityMap[cat] ?? 0) + 1;
+        }
+      }
+      
       String mostPopularService = 'Tidak ada data';
       int mostPopularServiceCount = 0;
 
-      if (categoryCount.isNotEmpty) {
-        final topCategory = categoryCount.entries.first;
-        mostPopularService = topCategory.key;
-        mostPopularServiceCount = topCategory.value;
+      if (popularityMap.isNotEmpty) {
+        var sortedEntries = popularityMap.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        mostPopularService = sortedEntries.first.key;
+        mostPopularServiceCount = sortedEntries.first.value;
       }
+      
+      // Calculate Service Distribution for Pie Chart based on Customer Usage
+      // If popularityMap is empty (no customers), show distribution of available categories (count=1) or 0
+      final categoryCountForChart = popularityMap.isNotEmpty 
+          ? popularityMap 
+          : { for (var e in categories) e : 0 }; 
 
       // Generate pie chart data
-      final pieChartData = _generatePieChartData(categoryCount);
+      final pieChartData = _generatePieChartData(categoryCountForChart);
 
       // Get real monthly growth data from database
       final monthlyGrowthData = await _generateMonthlyGrowthDataFromDBAsync();
 
       _statistics = StatisticsData(
         totalCustomers: customers.length,
-        totalServices: services.length,
+        totalServices: categories.length, // Count categories
         mostPopularService: mostPopularService,
         mostPopularServiceCount: mostPopularServiceCount,
         recentCustomers: recentCustomers,
-        recentServices: recentServices,
+        recentCategories: recentCategories, // Pass recent categories
         serviceDistributionData: pieChartData,
         monthlyGrowthData: monthlyGrowthData,
       );
